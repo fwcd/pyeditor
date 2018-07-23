@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8" />
+		<title>PyEditor</title>
+		<link rel="stylesheet" href="css/styles.css" />
+	</head>
+	<body>
+		<div id="app">
+			<div id="toolbar">
+				<button>Öffnen</button>
+				<button>Speichern</button>
+			</div>
+			<div id="editor-widget"></div>
+		</div>
+	</body>
+	<script>
+		// Monaco uses a custom amd loader that overrides node's require.
+		// Keep a reference to node's require so we can restore it after executing the amd loader file.
+		var nodeRequire = global.require;
+	</script>
+	<script src="../node_modules/monaco-editor/min/vs/loader.js"></script>
+	<script>
+		// Save Monaco's amd require and restore Node's require
+		var amdRequire = global.require;
+		global.require = nodeRequire;
+		// require node modules before loader.js comes in
+		var path = require('path');
+		function uriFromPath(_path) {
+			var pathName = path.resolve(_path).replace(/\\/g, '/');
+			if (pathName.length > 0 && pathName.charAt(0) !== '/') {
+				pathName = '/' + pathName;
+			}
+			return encodeURI('file://' + pathName);
+		}
+		amdRequire.config({
+			baseUrl: uriFromPath(path.join(__dirname, '../node_modules/monaco-editor/min'))
+		});
+		// workaround monaco-css not understanding the environment
+		self.module = undefined;
+		// workaround monaco-typescript not understanding the environment
+		self.process.browser = true;
+	</script>
+	<script>
+		// You can also require other files to run in this process
+		require('./js/renderer.js')
+	</script>
+</html>

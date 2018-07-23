@@ -1,0 +1,19 @@
+{
+	"name": "pyeditor",
+	"version": "1.0.0",
+	"description": "A lightweight Python editor",
+	"scripts": {
+		"start": "electron ./src/js/main.js"
+	},
+	"keywords": [
+		"Electron"
+	],
+	"author": "fwcd",
+	"license": "MIT",
+	"devDependencies": {
+		"electron": "^2.0.2"
+	},
+	"dependencies": {
+		"monaco-editor": "^0.13.1"
+	}
+}
