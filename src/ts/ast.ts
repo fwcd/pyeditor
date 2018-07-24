@@ -1,4 +1,4 @@
-import { StringSet } from "./utils/set";
+import { StringSet, Set, ArraySet } from "./utils/set";
 
 export class AST {
 	readonly root: ASTNode;
@@ -22,7 +22,7 @@ export class ASTNode {
 	endLine?: number;
 	childs: ASTNode[] = [];
 	localFunctions: ASTMethod[] = [];
-	localVariables = new StringSet();
+	localVariables: Set<ASTVariable> = new ArraySet();
 	
 	public constructor(startLine: number, endLine?: number) {
 		this.startLine = startLine;
@@ -46,7 +46,7 @@ export class ASTNode {
 		}
 	}
 	
-	public getVariables(): StringSet {
+	public getVariables(): Set<ASTVariable> {
 		if (this.parent) {
 			return this.localVariables.union(this.parent.getVariables());
 		} else {
@@ -66,4 +66,5 @@ export interface ASTMethod {
 
 export interface ASTVariable {
 	name: string;
+	type: string;
 }

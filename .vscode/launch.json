@@ -1,0 +1,23 @@
+{
+	// Use IntelliSense to learn about possible attributes.
+	// Hover to view descriptions of existing attributes.
+	// For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"type": "chrome",
+			"request": "launch",
+			"name": "Debug Electron Renderer Process",
+			"runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron",
+			"runtimeArgs": [
+				"${workspaceRoot}/src/js/main.js",
+				"--remote-debugging-port=9222"
+			],
+			"windows": {
+				"runtimeExecutable": "${workspaceRoot}/node_modules/.bin/electron.cmd"
+			},
+			"sourceMaps": true,
+			"webRoot": "${workspaceRoot}"
+		}
+	]
+}

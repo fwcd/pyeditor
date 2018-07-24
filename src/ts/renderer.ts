@@ -61,7 +61,8 @@ function setupEditor(): void {
 						label: it.name,
 						kind: monaco.languages.CompletionItemKind.Function
 					}).concat(node.getVariables().getValues().map(it => <monaco.languages.CompletionItem>{
-						label: it,
+						label: it.name,
+						detail: it.type,
 						kind: monaco.languages.CompletionItemKind.Variable
 					}))
 				};

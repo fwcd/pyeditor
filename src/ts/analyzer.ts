@@ -1,7 +1,11 @@
-import { AST, ASTNode } from "./ast";
+import { AST, ASTNode, ASTVariable } from "./ast";
+import { Set } from "./utils/set";
 
-const functionMatcher = /\s*def ([\w]+)\((.*)\):/;
-const variableMatcher = /\s*(\w+) = (\S+)/;
+const functionMatcher = /^\s*def ([\w]+)\((.*)\):$/;
+const variableMatcher = /^\s*(\w+) = (.+)$/;
+const stringMatcher = /^["'].*["']$/;
+const intMatcher = /^[0-9]+$/;
+const floatMatcher = /^[0-9]+.[0-9]+$/;
 
 export class Analyzer {
 	private ast: AST;
@@ -63,9 +67,14 @@ export class Analyzer {
 			}
 			let variable = variableMatcher.exec(line);
 			if (variable && variable.length > 0) {
-				// let value = variable[2];
 				let name = variable[1];
-				node.localVariables.add(name);
+				let value = variable[2];
+				let variablesInScope = node.getVariables();
+				
+				node.localVariables.add({
+					name: name,
+					type: this.guessTypeOf(value, variablesInScope)
+				});
 			}
 			
 			lastIndent = indent;
@@ -73,6 +82,26 @@ export class Analyzer {
 		
 		while (nodeStack.length > 1) {
 			popAndHookIntoNode(lines.length);
+		}
+	}
+	
+	private guessTypeOf(value: string, variablesInScope: Set<ASTVariable>): string {
+	if (stringMatcher.test(value)) {
+			return "str";
+		} else if (intMatcher.test(value)) {
+			return "int";
+		} else if (floatMatcher.test(value)) {
+			return "float";
+		} else {
+			let type: string = null;
+			variablesInScope
+				.getValues()
+				.forEach(it => {
+					if (it.name === value) {
+						type = it.type;
+					}
+				});
+			return type || "Any";
 		}
 	}
 	
