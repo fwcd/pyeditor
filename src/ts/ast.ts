@@ -7,13 +7,13 @@ export class AST {
 		this.root = new ASTNode(0, lastLine);
 	}
 	
-	public nodeAt(line: number): ASTNode {
-		return this.root.nodeAt(line);
-	}
+	public findVariable(name: string): ASTVariable { return this.root.findVariable(name); }
 	
-	public toString(): string {
-		return this.root.toString();
-	}
+	public findFunction(name: string): ASTFunction { return this.root.findFunction(name); }
+	
+	public nodeAt(line: number): ASTNode { return this.root.nodeAt(line); }
+	
+	public toString(): string { return this.root.toString(); }
 }
 
 export class ASTNode {
@@ -21,7 +21,7 @@ export class ASTNode {
 	parent?: ASTNode;
 	endLine?: number;
 	childs: ASTNode[] = [];
-	localFunctions: ASTMethod[] = [];
+	localFunctions: ASTFunction[] = [];
 	localVariables: Set<ASTVariable> = new ArraySet();
 	
 	public constructor(startLine: number, endLine?: number) {
@@ -38,7 +38,33 @@ export class ASTNode {
 		}
 	}
 	
-	public getFunctions(): ASTMethod[] {
+	public findVariable(name: string): ASTVariable {
+		let matching = this.localVariables.getValues().filter(it => it.name === name);
+		if (matching.length > 0) {
+			return matching[0];
+		} else {
+			for (let i=0; i<this.childs.length; i++) {
+				let variable = this.childs[i].findVariable(name);
+				if (variable !== null) return variable;
+			}
+			return null;
+		}
+	}
+	
+	public findFunction(name: string): ASTFunction {
+		let matching = this.localFunctions.filter(it => it.name === name);
+		if (matching.length > 0) {
+			return matching[0];
+		} else {
+			for (let i=0; i<this.childs.length; i++) {
+				let func = this.childs[i].findFunction(name);
+				if (func !== null) return func;
+			}
+			return null;
+		}
+	}
+	
+	public getFunctions(): ASTFunction[] {
 		if (this.parent) {
 			return this.localFunctions.concat(this.parent.getFunctions());
 		} else {
@@ -59,12 +85,19 @@ export class ASTNode {
 	}
 }
 
-export interface ASTMethod {
+export interface TextPosition {
+	column: number;
+	lineNumber: number;
+}
+
+export interface ASTFunction {
 	name: string;
 	parameterNames: string[];
+	position: TextPosition;
 }
 
 export interface ASTVariable {
 	name: string;
 	type: string;
+	position: TextPosition;
 }

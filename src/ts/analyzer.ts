@@ -1,4 +1,4 @@
-import { AST, ASTNode, ASTVariable } from "./ast";
+import { AST, ASTNode, ASTVariable, TextPosition } from "./ast";
 import { Set } from "./utils/set";
 
 const functionMatcher = /^\s*def ([\w]+)\((.*)\):$/;
@@ -44,15 +44,19 @@ export class Analyzer {
 		}
 		
 		let lines = this.model.getLinesContent();
-		lines.forEach((line, i) => {
+		lines.forEach((line, lineNumber) => {
 			let indent = this.detectIndentationLevel(line);
+			let pos: TextPosition = {
+				column: 0,
+				lineNumber: lineNumber
+			};
 			
 			if (indent > lastIndent) {
-				let newNode = new ASTNode(i);
+				let newNode = new ASTNode(lineNumber);
 				console.log("Pushing " + newNode);
 				nodeStack.push(newNode);
 			} else if (indent < lastIndent) {
-				popAndHookIntoNode(i);
+				popAndHookIntoNode(lineNumber);
 			}
 			
 			let node = peek();
@@ -61,7 +65,8 @@ export class Analyzer {
 			if (func && func.length > 0) {
 				node.localFunctions.push({
 					name: func[1],
-					parameterNames: func[2].split(",").map(it => it.trim())
+					parameterNames: func[2].split(",").map(it => it.trim()),
+					position: pos
 				});
 				console.log(node.toString());
 			}
@@ -73,7 +78,8 @@ export class Analyzer {
 				
 				node.localVariables.add({
 					name: name,
-					type: this.guessTypeOf(value, variablesInScope)
+					type: this.guessTypeOf(value, variablesInScope),
+					position: pos
 				});
 			}
 			

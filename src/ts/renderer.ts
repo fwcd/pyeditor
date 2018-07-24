@@ -1,6 +1,7 @@
 /// <reference path="../../node_modules/monaco-editor/monaco.d.ts" />
 
 import { Analyzer } from "./analyzer";
+import { resolve } from "path";
 
 declare var amdRequire;
 amdRequire(['vs/editor/editor.main'], setupEditor);
@@ -47,18 +48,16 @@ function setupEditor(): void {
 	});
 	monaco.languages.registerCompletionItemProvider('python', {
 		provideCompletionItems(model, pos, token): monaco.Promise<monaco.languages.CompletionList> {
-			let analyzer = getAnalyzer(model);
-			analyzer.parseEntire();
-			let ast = analyzer.getAST();
-			let node = ast.nodeAt(pos.lineNumber);
-			
-			console.log(ast.toString());
-			
 			return new monaco.Promise((resolve, reject) => {
+				let analyzer = getAnalyzer(model);
+				analyzer.parseEntire(); // TODO: Incremental parsing
+				let ast = analyzer.getAST();
+				let node = ast.nodeAt(pos.lineNumber);
 				let list: monaco.languages.CompletionList = {
 					isIncomplete: false,
 					items: node.getFunctions().map(it => <monaco.languages.CompletionItem>{
 						label: it.name,
+						detail: it.name + "(" + it.parameterNames + ")",
 						kind: monaco.languages.CompletionItemKind.Function
 					}).concat(node.getVariables().getValues().map(it => <monaco.languages.CompletionItem>{
 						label: it.name,
@@ -67,6 +66,32 @@ function setupEditor(): void {
 					}))
 				};
 				resolve(list);
+			});
+		}
+	});
+	monaco.languages.registerDefinitionProvider('python', {
+		provideDefinition(model, pos, token): monaco.Promise<monaco.languages.Location | monaco.languages.Location[]> {
+			return new monaco.Promise((resolve, reject) => {
+				let analyzer = getAnalyzer(model);
+				analyzer.parseEntire(); // TODO: Incremental parsing
+				let ast = analyzer.getAST();
+				let node = ast.nodeAt(pos.lineNumber);
+				let word = model.getWordAtPosition(pos).word;
+				let declaration = ast.findVariable(word) || ast.findFunction(word);
+				if (declaration) {
+					let location = declaration.position;
+					resolve({
+						range: {
+							startLineNumber: location.lineNumber + 1,
+							endLineNumber: location.lineNumber + 1,
+							startColumn: location.column,
+							endColumn: location.column
+						},
+						uri: model.uri
+					})
+				} else {
+					resolve([]);
+				}
 			});
 		}
 	});

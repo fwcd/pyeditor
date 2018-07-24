@@ -11,6 +11,8 @@ export interface Set<T> {
 	getValues(): T[];
 	
 	union(other: Set<T>): Set<T>;
+	
+	size(): number;
 }
 
 export class ArraySet<T> implements Set<T> {
@@ -46,6 +48,10 @@ export class ArraySet<T> implements Set<T> {
 		result.add(...other.getValues());
 		return result;
 	}
+	
+	public size(): number {
+		return this.values.length;
+	}
 }
 
 export class StringSet implements Set<string> {
@@ -78,5 +84,9 @@ export class StringSet implements Set<string> {
 		result.add(...this.getValues());
 		result.add(...other.getValues());
 		return result;
+	}
+	
+	public size(): number {
+		return this.getValues().length;
 	}
 }
