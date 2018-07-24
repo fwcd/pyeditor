@@ -3,6 +3,8 @@
 	"version": "1.0.0",
 	"description": "A lightweight Python editor",
 	"scripts": {
+		"watch": "tsc -w",
+		"build": "tsc",
 		"start": "electron ./src/js/main.js"
 	},
 	"keywords": [
