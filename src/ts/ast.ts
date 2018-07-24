@@ -1,3 +1,5 @@
+import { StringSet } from "./utils/set";
+
 export class AST {
 	readonly root: ASTNode;
 	
@@ -8,18 +10,21 @@ export class AST {
 	public nodeAt(line: number): ASTNode {
 		return this.root.nodeAt(line);
 	}
+	
+	public toString(): string {
+		return this.root.toString();
+	}
 }
 
 export class ASTNode {
 	readonly startLine: number;
-	readonly endLine: number;
-	private parent?: ASTNode;
+	parent?: ASTNode;
+	endLine?: number;
 	childs: ASTNode[] = [];
-	localMethods: ASTMethod[] = [];
-	localVariables: ASTVariable[] = [];
+	localFunctions: ASTMethod[] = [];
+	localVariables = new StringSet();
 	
-	public constructor(startLine: number, endLine: number, parent?: ASTNode) {
-		this.parent = parent;
+	public constructor(startLine: number, endLine?: number) {
 		this.startLine = startLine;
 		this.endLine = endLine;
 	}
@@ -33,20 +38,24 @@ export class ASTNode {
 		}
 	}
 	
-	public getMethods(): ASTMethod[] {
+	public getFunctions(): ASTMethod[] {
 		if (this.parent) {
-			return this.localMethods.concat(this.parent.getMethods());
+			return this.localFunctions.concat(this.parent.getFunctions());
 		} else {
-			return this.localMethods;
+			return this.localFunctions;
 		}
 	}
 	
-	public getVariables(): ASTVariable[] {
+	public getVariables(): StringSet {
 		if (this.parent) {
-			return this.localVariables.concat(this.parent.getVariables());
+			return this.localVariables.union(this.parent.getVariables());
 		} else {
 			return this.localVariables;
 		}
+	}
+	
+	public toString(): string {
+		return "<" + this.localFunctions.map(it => it.name + "()") + " ~ " + this.localVariables.getValues() + "> [" + this.childs + "]";
 	}
 }
 

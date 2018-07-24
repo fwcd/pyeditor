@@ -47,16 +47,23 @@ function setupEditor(): void {
 	});
 	monaco.languages.registerCompletionItemProvider('python', {
 		provideCompletionItems(model, pos, token): monaco.Promise<monaco.languages.CompletionList> {
-			getAnalyzer(model).parseEntire();
+			let analyzer = getAnalyzer(model);
+			analyzer.parseEntire();
+			let ast = analyzer.getAST();
+			let node = ast.nodeAt(pos.lineNumber);
+			
+			console.log(ast.toString());
+			
 			return new monaco.Promise((resolve, reject) => {
 				let list: monaco.languages.CompletionList = {
 					isIncomplete: false,
-					items: [
-						{
-							label: "Test",
-							kind: monaco.languages.CompletionItemKind.Method
-						}
-					]
+					items: node.getFunctions().map(it => <monaco.languages.CompletionItem>{
+						label: it.name,
+						kind: monaco.languages.CompletionItemKind.Function
+					}).concat(node.getVariables().getValues().map(it => <monaco.languages.CompletionItem>{
+						label: it,
+						kind: monaco.languages.CompletionItemKind.Variable
+					}))
 				};
 				resolve(list);
 			});

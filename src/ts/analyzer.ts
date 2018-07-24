@@ -1,5 +1,8 @@
 import { AST, ASTNode } from "./ast";
 
+const functionMatcher = /\s*def ([\w]+)\((.*)\):/;
+const variableMatcher = /\s*(\w+) = (\S+)/;
+
 export class Analyzer {
 	private ast: AST;
 	private model: monaco.editor.ITextModel;
@@ -15,16 +18,61 @@ export class Analyzer {
 		this.parseScope(this.ast.root);
 	}
 	
-	private parseScope(node: ASTNode): void {
-		this.forLineIn(node, line => {
-			let indent = this.detectIndentationLevel(line);
-		});
+	public getAST(): AST {
+		return this.ast;
 	}
 	
-	private forLineIn(node: ASTNode, each: (line: string) => void): void {
-		let allLines = this.model.getLinesContent();
-		for (let i=node.startLine; i<=node.endLine; i++) {
-			each(allLines[i]);
+	private parseScope(bottomNode: ASTNode): void {
+		let lastIndent = 0;
+		let nodeStack: ASTNode[] = [bottomNode];
+		
+		function peek(): ASTNode {
+			return nodeStack[nodeStack.length - 1];
+		}
+		
+		function popAndHookIntoNode(i: number): void {
+			let child = nodeStack.pop();
+			console.log("Hooking " + child.toString());
+			let parent = peek();
+			child.endLine = i;
+			child.parent = parent;
+			parent.childs.push(child);
+		}
+		
+		let lines = this.model.getLinesContent();
+		lines.forEach((line, i) => {
+			let indent = this.detectIndentationLevel(line);
+			
+			if (indent > lastIndent) {
+				let newNode = new ASTNode(i);
+				console.log("Pushing " + newNode);
+				nodeStack.push(newNode);
+			} else if (indent < lastIndent) {
+				popAndHookIntoNode(i);
+			}
+			
+			let node = peek();
+			
+			let func = functionMatcher.exec(line);
+			if (func && func.length > 0) {
+				node.localFunctions.push({
+					name: func[1],
+					parameterNames: func[2].split(",").map(it => it.trim())
+				});
+				console.log(node.toString());
+			}
+			let variable = variableMatcher.exec(line);
+			if (variable && variable.length > 0) {
+				// let value = variable[2];
+				let name = variable[1];
+				node.localVariables.add(name);
+			}
+			
+			lastIndent = indent;
+		});
+		
+		while (nodeStack.length > 1) {
+			popAndHookIntoNode(lines.length);
 		}
 	}
 	
