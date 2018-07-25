@@ -1,6 +1,7 @@
 /// <reference path="../../node_modules/monaco-editor/monaco.d.ts" />
 
 import { Analyzer } from "./analyzer";
+import { EVENT_BUS } from "./renderer";
 
 let cachedModel: monaco.editor.ITextModel = null;
 let analyzer: Analyzer = null;
@@ -28,9 +29,7 @@ export function setupEditor(): void {
 		scrollBeyondLastLine: false,
 		autoIndent: true
 	});
-	window.addEventListener("resize", () => {
-		editor.layout();
-	});
+	EVENT_BUS.subscribe("resize", () => editor.layout());
 	// TODO: Observe model changes to update it's
 	// options accordingly.
 	editor.getModel().updateOptions({
