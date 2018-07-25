@@ -26,13 +26,17 @@ html, body {
 
 #split-drag {
 	flex: 0 0 6px;
-	background-color: rgb(43, 43, 43);
 	cursor: row-resize;
 }
 
 #terminal {
-	flex: 0 0 150px;
+	flex: 0 0 auto;
 	width: 100%;
-	background-color: rgb(43, 43, 43);
+	height: 150px;
+	padding: 5px;
 	color: white;
+}
+
+#terminal, #splitDrag {
+	background-color: rgb(29, 29, 29);
 }

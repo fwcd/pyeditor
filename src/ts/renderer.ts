@@ -1,6 +1,7 @@
 import { setupEditor } from "./editor";
 import { EventBus } from "./eventBus";
 import { parseLanguageFrom } from "./language";
+import { PythonTerminal } from "./terminal";
 
 export const EVENT_BUS = new EventBus();
 
@@ -20,12 +21,15 @@ splitHandle.addEventListener("pointerdown", e => {
 splitHandle.addEventListener("pointermove", e => {
 	if (splitDragged) {
 		EVENT_BUS.fire("resize");
-		terminal.style.flexBasis = window.innerHeight - e.y + "px";
+		terminal.style.height = window.innerHeight - e.y + "px";
 	}
 });
 splitHandle.addEventListener("pointerup", e => {
 	splitHandle.releasePointerCapture(e.pointerId);
 	splitDragged = false;
+	EVENT_BUS.fire("postresize");
 });
 
 parseLanguageFrom("lang/english.txt").apply();
+
+new PythonTerminal(document.getElementById("terminal")).println("Hello World!");
