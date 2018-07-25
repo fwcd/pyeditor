@@ -24,6 +24,10 @@ html, body {
 	height: 0px; /* The height is managed by flex-grow */
 }
 
+.terminal-themed {
+	background-color: rgb(29, 29, 29);
+}
+
 #split-drag {
 	flex: 0 0 6px;
 	cursor: row-resize;
@@ -35,8 +39,4 @@ html, body {
 	height: 150px;
 	padding: 5px;
 	color: white;
-}
-
-#terminal, #splitDrag {
-	background-color: rgb(29, 29, 29);
 }
