@@ -1,0 +1,3 @@
+open-button=Öffnen
+save-button=Speichern
+run-button=Programm starten

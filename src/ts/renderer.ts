@@ -1,5 +1,6 @@
 import { setupEditor } from "./editor";
 import { EventBus } from "./eventBus";
+import { parseLanguageFrom } from "./language";
 
 export const EVENT_BUS = new EventBus();
 
@@ -26,3 +27,5 @@ splitHandle.addEventListener("pointerup", e => {
 	splitHandle.releasePointerCapture(e.pointerId);
 	splitDragged = false;
 });
+
+parseLanguageFrom("lang/english.txt").apply();
