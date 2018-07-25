@@ -2,6 +2,7 @@
 
 import { Analyzer } from "./analyzer";
 import { EVENT_BUS } from "./renderer";
+import { FileLoader } from "./fileLoader";
 
 let cachedModel: monaco.editor.ITextModel = null;
 let analyzer: Analyzer = null;
@@ -29,12 +30,14 @@ export function setupEditor(): void {
 		scrollBeyondLastLine: false,
 		autoIndent: true
 	});
+	let textModel = editor.getModel();
 	EVENT_BUS.subscribe("resize", () => editor.layout());
 	// TODO: Observe model changes to update it's
 	// options accordingly.
-	editor.getModel().updateOptions({
+	textModel.updateOptions({
 		trimAutoWhitespace: false
 	});
+	new FileLoader(textModel);
 	monaco.languages.setLanguageConfiguration('python', {
 		onEnterRules: [
 			{
