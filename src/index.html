@@ -8,13 +8,22 @@
 	</head>
 	<body>
 		<div id="app">
-			<div id="toolbar">
-				<button class="open-button" id="open-file">Open</button>
-				<button class="save-button" id="save-file">Save</button>
+			<div id="toolbar" class="buttonbar">
+				<button id="open-file">
+					<img src="img/openIcon.png" />
+					<span class="open">Open</span>
+				</button>
+				<button id="save-file">
+					<img src="img/saveIcon.png" />
+					<span class="save">Save</span>
+				</button>
 			</div>
 			<div id="editor"></div>
-			<div id="run-toolbar">
-				<button class="run-button">Run Program</button>
+			<div id="run-toolbar" class="buttonbar">
+				<button id="run-program">
+					<img src="img/runIcon.png" />
+					<span class="run">Run Program</span>
+				</button>
 			</div>
 			<div id="split-drag" class="terminal-themed"></div>
 			<div id="terminal" class="terminal-themed">
