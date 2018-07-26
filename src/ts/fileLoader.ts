@@ -4,13 +4,26 @@ import { EVENT_BUS } from "./renderer";
 
 export class FileLoader {
 	private model: monaco.editor.ITextModel;
+	private unsaved = false;
 	private currentFilePath?: string;
 	
 	public constructor(model: monaco.editor.ITextModel) {
 		this.model = model;
-		this.registerOpenButton(document.getElementById("open-file"));
-		this.registerSaveButton(document.getElementById("save-file"));
-		this.registerSaveAsButton(document.getElementById("save-file-as"));
+		
+		this.model.onDidChangeContent(() => {
+			if (!this.unsaved) {
+				this.unsaved = true;
+				EVENT_BUS.fire("unsaved");
+			}
+		});
+		
+		this.registerOpenButton(document.getElementById("open-button"));
+		this.registerSaveButton(document.getElementById("save-button"));
+		this.registerSaveAsButton(document.getElementById("save-as-button"));
+		
+		let saveIcon = document.getElementById("save-icon") as HTMLImageElement;
+		EVENT_BUS.subscribe("saved", () => saveIcon.src = "img/saveInactiveIcon.png");
+		EVENT_BUS.subscribe("unsaved", () => saveIcon.src = "img/saveIcon.png");
 	}
 	
 	private registerOpenButton(button: HTMLElement): void {
@@ -54,17 +67,18 @@ export class FileLoader {
 		fs.readFile(filePath, "utf-8", (err, data) => {
 			this.model.setValue(data);
 			this.changeFilePathTo(filePath);
+			this.setSaved(filePath);
 		});
 	}
 	
 	private saveFile(filePath: string): void {
-		console.log(filePath);
 		fs.writeFile(filePath, this.model.getValue(), {
 			encoding: "utf-8"
 		}, err => {
 			if (err) console.log(err);
 		});
 		this.changeFilePathTo(filePath);
+		this.setSaved(filePath);
 	}
 	
 	private changeFilePathTo(filePath: string): void {
@@ -72,5 +86,10 @@ export class FileLoader {
 			this.currentFilePath = filePath;
 			EVENT_BUS.fire("changefilepath", filePath);
 		}
+	}
+	
+	private setSaved(filePath: string): void {
+		this.unsaved = false;
+		EVENT_BUS.fire("saved", filePath);
 	}
 }
