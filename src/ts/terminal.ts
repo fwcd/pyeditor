@@ -21,6 +21,8 @@ export class PythonTerminal {
 			background: "rgb(29, 29, 29)"
 		}
 	});
+	private activeProcess?: child_process.ChildProcess;
+	private input = "";
 	private lang: Language;
 	private launches = 0;
 	private versionChooser: PythonChooser;
@@ -30,6 +32,17 @@ export class PythonTerminal {
 		this.versionChooser = versionChooser;
 		this.terminal.open(element);
 		this.terminal.fit();
+		this.terminal.on("data", data => {
+			let str = data.replace(/\r/g, '\n\r');
+			this.input += str;
+			this.terminal.write(str);
+		});
+		this.terminal.on("linefeed", () => {
+			if (this.activeProcess) {
+				this.activeProcess.stdin.write(this.input, "utf-8");
+			}
+			this.input = "";
+		});
 		EVENT_BUS.subscribe("postresize", () => this.terminal.fit());
 	}
 	
@@ -38,12 +51,15 @@ export class PythonTerminal {
 		this.terminal.write("\r");
 		this.terminal.clear();
 		this.terminal.writeln(">> " + this.lang.get("launch-nr") + this.launches);
-		let proc = child_process.spawn(this.versionChooser.getSelectedVersion() || "python", [pythonProgramPath]);
-		proc.stdout.on("data", data => {
+		this.activeProcess = child_process.spawn(this.versionChooser.getSelectedVersion() || "python", [pythonProgramPath]);
+		this.activeProcess.stdout.on("data", data => {
 			this.write(this.format(data));
 		});
-		proc.stderr.on("data", data => {
+		this.activeProcess.stderr.on("data", data => {
 			this.write(chalk.redBright(this.format(data)));
+		});
+		this.activeProcess.on("exit", () => {
+			this.activeProcess = undefined;
 		});
 	}
 	
