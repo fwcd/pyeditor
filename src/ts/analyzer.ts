@@ -36,7 +36,6 @@ export class Analyzer {
 		
 		function popAndHookIntoNode(i: number): void {
 			let child = nodeStack.pop();
-			console.log("Hooking " + child.toString());
 			let parent = peek();
 			child.endLine = i;
 			child.parent = parent;
@@ -53,7 +52,6 @@ export class Analyzer {
 			
 			if (indent > lastIndent) {
 				let newNode = new ASTNode(lineNumber);
-				console.log("Pushing " + newNode);
 				nodeStack.push(newNode);
 			} else if (indent < lastIndent) {
 				popAndHookIntoNode(lineNumber);
@@ -68,7 +66,6 @@ export class Analyzer {
 					parameterNames: func[2].split(",").map(it => it.trim()),
 					position: pos
 				});
-				console.log(node.toString());
 			}
 			let variable = variableMatcher.exec(line);
 			if (variable && variable.length > 0) {

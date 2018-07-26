@@ -57,7 +57,7 @@ let versionChooser = new PythonChooser(document.getElementById("python-chooser")
 let terminal = new PythonTerminal(
 	document.getElementById("terminal"),
 	versionChooser,
-	editor.getHighlighter(),
+	editor,
 	lang
 );
 let runner = new Runner({

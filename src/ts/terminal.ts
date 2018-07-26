@@ -6,6 +6,8 @@ import { EditorLineHighlighter } from "./editorLineHighlighter";
 import { Language } from "./language";
 import { PythonChooser } from "./pythonChooser";
 import { EVENT_BUS } from "./renderer";
+import { PythonDebugSession } from "./pythonDebug";
+import { Editor } from "./editor";
 
 // Apply and declare prototype extension method "fit()"
 Terminal.applyAddon(fit);
@@ -26,19 +28,19 @@ export class PythonTerminal {
 	private input = "";
 	private lang: Language;
 	private launches = 0;
-	private lineHighlighter: EditorLineHighlighter;
+	private debugSession?: PythonDebugSession;
+	private editor: Editor;
 	private versionChooser: PythonChooser;
-	private isStepping = false;
 	
 	public constructor(
 		element: HTMLElement,
 		versionChooser: PythonChooser,
-		lineHighlighter: EditorLineHighlighter,
+		editor: Editor,
 		lang: Language
 	) {
 		this.lang = lang;
 		this.versionChooser = versionChooser;
-		this.lineHighlighter = lineHighlighter;
+		this.editor = editor;
 		this.terminal.open(element);
 		this.terminal.fit();
 		this.terminal.on("key", (key, event) => {
@@ -54,37 +56,47 @@ export class PythonTerminal {
 			}
 		});
 		this.terminal.on("linefeed", () => {
-			if (this.input.length > 0 && this.activeProcess) {
-				this.activeProcess.stdin.write(this.input.trim() + "\n", "utf-8");
+			if (this.input.length > 0) {
+				if (this.debugSession) {
+					this.debugSession.input(this.input);
+				} else if (this.activeProcess) {
+					this.activeProcess.stdin.write(this.input.trim() + "\n", "utf-8");
+				}
+				this.input = "";
 			}
-			this.input = "";
 		});
 		EVENT_BUS.subscribe("postresize", () => this.terminal.fit());
 	}
 	
 	public runPythonShell(): void {
-		this.clear();
+		this.stop();
 		this.attach(child_process.spawn(this.getPythonCommand(), ["-i", "-u"]));
 		this.focus();
 	}
 	
 	public step(pythonProgramPath: string): void {
-		this.clear();
-		this.attach(child_process.spawn(
-			this.getPythonCommand(),
-			["-m", "pdb", pythonProgramPath]
-		), true);
-	}
-	
-	private runWithStep(pythonProgramPath: string): void {
-		this.launches += 1;
-		this.clear();
-		this.terminal.writeln(">> " + this.lang.get("launch-nr") + this.launches);
-		this.attach(child_process.spawn(
-			this.getPythonCommand(),
-			[pythonProgramPath]
-		));
-		this.focus();
+		if (this.debugSession) {
+			this.debugSession.next();
+		} else {
+			this.stop();
+			this.debugSession = new PythonDebugSession(this.getPythonCommand(), pythonProgramPath);
+			this.debugSession.stdoutListeners.add(line => {
+				this.terminal.writeln(line);
+			});
+			let lineHighlighter = this.editor.getHighlighter();
+			this.debugSession.lineNumber.listen(lineNr => {
+				if (lineNr > 0) {
+					lineHighlighter.highlight(lineNr);
+				} else {
+					lineHighlighter.removeHighlightings();
+				}
+			});
+			this.debugSession.stopListeners.add(() => {
+				lineHighlighter.removeHighlightings();
+				this.debugSession = null;
+			});
+			this.debugSession.start();
+		}
 	}
 	
 	public stop(): void {
@@ -92,22 +104,22 @@ export class PythonTerminal {
 			this.activeProcess.kill();
 			this.removeActiveProcess();
 		}
-		this.clear();
+		if (this.debugSession) {
+			this.debugSession.stop();
+			this.debugSession = null;
+		}
+		this.terminal.reset();
 	}
 	
 	public run(pythonProgramPath: string): void {
 		this.launches += 1;
-		this.clear();
+		this.stop();
 		this.terminal.writeln(">> " + this.lang.get("launch-nr") + this.launches);
 		this.attach(child_process.spawn(
 			this.getPythonCommand(),
 			[pythonProgramPath]
 		));
 		this.focus();
-	}
-	
-	private clear(): void {
-		this.terminal.reset();
 	}
 	
 	private focus(): void {
@@ -118,7 +130,7 @@ export class PythonTerminal {
 		return this.versionChooser.getSelectedVersion() || "python";
 	}
 	
-	private attach(process: child_process.ChildProcess, stepping?: boolean): void {
+	private attach(process: child_process.ChildProcess): void {
 		this.activeProcess = process;
 		this.activeProcess.stdout.on("data", data => {
 			this.write(this.format(data));
@@ -129,14 +141,11 @@ export class PythonTerminal {
 		this.activeProcess.on("exit", () => {
 			this.removeActiveProcess();
 		});
-		if (stepping) {
-			this.isStepping = true;
-		}
 	}
 	
 	private removeActiveProcess(): void {
-		this.activeProcess = undefined;
-		this.isStepping = false;
+		this.activeProcess = null;
+		this.debugSession = null;
 	}
 	
 	private format(data: Buffer | string): string {

@@ -8,7 +8,6 @@ export class EditorLineHighlighter {
 	
 	public constructor(editor: monaco.editor.IStandaloneCodeEditor) {
 		this.editor = editor;
-		
 	}
 	
 	public highlight(lineNumber: number): void {
@@ -28,7 +27,8 @@ export class EditorLineHighlighter {
 	
 	public removeHighlightings(): void {
 		this.decorationIds = this.editor.deltaDecorations(
-			this.decorationIds, []
+			this.decorationIds,
+			[]
 		);
 	}
 }
