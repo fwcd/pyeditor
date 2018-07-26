@@ -27,25 +27,20 @@ export class FileLoader {
 	}
 	
 	private registerOpenButton(button: HTMLElement): void {
-		button.addEventListener("click", () => this.showOpenDialog());
+		button.addEventListener("click", () => this.open());
 	}
 	
 	private registerSaveButton(button: HTMLElement): void {
 		button.addEventListener("click", () => {
-			console.log(this.currentFilePath);
-			if (this.currentFilePath) {
-				this.saveFile(this.currentFilePath);
-			} else {
-				this.showSaveAsDialog();
-			}
+			this.save();
 		});
 	}
 	
 	private registerSaveAsButton(button: HTMLElement): void {
-		button.addEventListener("click", () => this.showSaveAsDialog());
+		button.addEventListener("click", () => this.saveAs());
 	}
 	
-	private showOpenDialog(): void {
+	public open(): void {
 		remote.dialog.showOpenDialog(remote.getCurrentWindow(), {
 			properties: ["openFile"]
 		}, files => {
@@ -55,12 +50,20 @@ export class FileLoader {
 		});
 	}
 	
-	private showSaveAsDialog(): void {
+	public saveAs(): void {
 		remote.dialog.showSaveDialog(remote.getCurrentWindow(), {}, fileName => {
 			if (fileName) {
 				this.saveFile(fileName);
 			}
 		});
+	}
+	
+	public save(): void {
+		if (this.currentFilePath) {
+			this.saveFile(this.currentFilePath);
+		} else {
+			this.saveAs();
+		}
 	}
 	
 	private openFile(filePath: string): void {

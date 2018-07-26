@@ -2,3 +2,5 @@ open=Open
 save=Save
 save-as=Save As
 run=Run Program
+filemenu=File
+helloworld=Hello World

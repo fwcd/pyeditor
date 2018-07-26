@@ -4,15 +4,15 @@ import * as fs from "fs";
 export class Language {
 	private mappings: { [className: string]: string } = {};
 	
-	public setLangName(htmlClass: string, langName: string): void {
+	public set(htmlClass: string, langName: string): void {
 		this.mappings[htmlClass] = langName;
 	}
 	
-	public getLangName(htmlClass: string): string {
+	public get(htmlClass: string): string {
 		return this.mappings[htmlClass];
 	}
 	
-	public apply(): void {
+	public applyToDOM(): void {
 		for (let className in this.mappings) {
 			let elements = document.getElementsByClassName(className);
 			for (let i=0; i<elements.length; i++) {
@@ -29,7 +29,7 @@ export function parseLanguageFrom(fileName: string): Language {
 		.split("\n")
 		.forEach(line => {
 			let splitted = line.split("=");
-			lang.setLangName(splitted[0], splitted[1])
+			lang.set(splitted[0], splitted[1])
 		});
 	return lang;
 }

@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, Menu } from "electron";
 import * as path from "path";
 
 // Keep a global reference of the window object, if you don't, the window will
@@ -25,6 +25,8 @@ function createWindow () {
 		// when you should delete the corresponding element.
 		mainWindow = null
 	});
+	
+	Menu.setApplicationMenu(Menu.buildFromTemplate([]));
 }
 
 // This method will be called when Electron has finished

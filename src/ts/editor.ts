@@ -3,6 +3,7 @@
 import { Analyzer } from "./analyzer";
 import { EVENT_BUS } from "./renderer";
 import { FileLoader } from "./fileLoader";
+import { Language } from "./language";
 
 let cachedModel: monaco.editor.ITextModel = null;
 let analyzer: Analyzer = null;
@@ -17,11 +18,11 @@ function getAnalyzer(model: monaco.editor.ITextModel): Analyzer {
 	}
 }
 
-export function setupEditor(): void {
+export function setupEditor(language: Language, fileLoaderCallback: (loader: FileLoader) => void): void {
 	let editorWidget = document.getElementById('editor');
 	let editor = monaco.editor.create(editorWidget, {
 		value: [
-			'print(\'Hallo Welt!\')'
+			"print(\"" + language.get("helloworld") + "\")"
 		].join('\n'),
 		language: 'python',
 		minimap: {
@@ -37,7 +38,7 @@ export function setupEditor(): void {
 	textModel.updateOptions({
 		trimAutoWhitespace: false
 	});
-	new FileLoader(textModel);
+	fileLoaderCallback(new FileLoader(textModel));
 	monaco.languages.setLanguageConfiguration('python', {
 		onEnterRules: [
 			{

@@ -2,3 +2,5 @@ open=Öffnen
 save=Speichern
 save-as=Speichern unter
 run=Programm starten
+filemenu=Datei
+helloworld=Hallo Welt
