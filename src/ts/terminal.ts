@@ -49,6 +49,7 @@ export class PythonTerminal {
 	public runPythonShell(): void {
 		this.terminal.reset();
 		this.attach(child_process.spawn(this.getPythonCommand(), ["-i", "-u"]));
+		this.focus();
 	}
 	
 	public run(pythonProgramPath: string): void {
@@ -59,6 +60,11 @@ export class PythonTerminal {
 			this.getPythonCommand(),
 			[pythonProgramPath]
 		));
+		this.focus();
+	}
+	
+	private focus(): void {
+		this.terminal.focus();
 	}
 	
 	private getPythonCommand(): string {
