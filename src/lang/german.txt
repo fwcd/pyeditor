@@ -1,3 +1,4 @@
 open=Öffnen
 save=Speichern
+save-as=Speichern unter
 run=Programm starten
