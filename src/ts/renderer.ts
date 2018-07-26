@@ -1,10 +1,10 @@
-import { setupEditor } from "./editor";
+import { remote } from "electron";
+import * as path from "path";
+import { Editor } from "./editor";
 import { EventBus } from "./eventBus";
 import { parseLanguageFrom } from "./language";
 import { PythonTerminal } from "./terminal";
-import * as path from "path";
-import { remote } from "electron";
-import { FileLoader } from "./fileLoader";
+import { Runner } from "./runner";
 
 const {Menu} = remote;
 
@@ -23,17 +23,15 @@ EVENT_BUS.subscribe("changefilepath", fileName => {
 
 // Monaco
 
-let fileLoader: FileLoader;
+let editor = new Editor(lang);
 declare var amdRequire;
-amdRequire(['vs/editor/editor.main'], () => setupEditor(lang, fl => {
-	fileLoader = fl;
-}));
+amdRequire(['vs/editor/editor.main'], () => editor.initialize());
 
 // Split pane
 
 let splitHandle = document.getElementById("split-drag");
 let splitDragged = false;
-let terminal = document.getElementById("terminal");
+let terminalWidget = document.getElementById("terminal");
 
 splitHandle.addEventListener("pointerdown", e => {
 	splitHandle.setPointerCapture(e.pointerId);
@@ -42,7 +40,7 @@ splitHandle.addEventListener("pointerdown", e => {
 splitHandle.addEventListener("pointermove", e => {
 	if (splitDragged) {
 		EVENT_BUS.fire("resize");
-		terminal.style.height = window.innerHeight - e.y + "px";
+		terminalWidget.style.height = window.innerHeight - e.y + "px";
 	}
 });
 splitHandle.addEventListener("pointerup", e => {
@@ -53,7 +51,8 @@ splitHandle.addEventListener("pointerup", e => {
 
 // Terminal
 
-new PythonTerminal(document.getElementById("terminal")).println("Hello World!");
+let terminal = new PythonTerminal(document.getElementById("terminal"), lang);
+let runner = new Runner(document.getElementById("run-button"), editor, terminal, lang);
 
 // Menu bar
 
@@ -64,17 +63,22 @@ let menu: Electron.MenuItemConstructorOptions[] = [
 			{
 				label: lang.get("open"),
 				accelerator: "CmdOrCtrl+O",
-				click(): void { fileLoader.open(); }
+				click(): void { editor.getFileLoader().open(); }
 			},
 			{
 				label: lang.get("save"),
 				accelerator: "CmdOrCtrl+S",
-				click(): void { fileLoader.save(); }
+				click(): void { editor.getFileLoader().save(); }
 			},
 			{
 				label: lang.get("save-as"),
 				accelerator: "CmdOrCtrl+Shift+S",
-				click(): void { fileLoader.saveAs(); }
+				click(): void { editor.getFileLoader().saveAs(); }
+			},
+			{
+				label: lang.get("run"),
+				accelerator: "CmdOrCtrl+R",
+				click(): void { runner.run(); }
 			}
 		]
 	}

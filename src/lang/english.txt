@@ -4,3 +4,5 @@ save-as=Save As
 run=Run Program
 filemenu=File
 helloworld=Hello World
+please-save-msg=Please save your file!
+launch-nr=Launch #

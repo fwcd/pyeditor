@@ -95,4 +95,12 @@ export class FileLoader {
 		this.unsaved = false;
 		EVENT_BUS.fire("saved", filePath);
 	}
+	
+	public getCurrentFilePath(): string {
+		return this.currentFilePath;
+	}
+	
+	public isUnsaved(): boolean {
+		return this.unsaved;
+	}
 }
