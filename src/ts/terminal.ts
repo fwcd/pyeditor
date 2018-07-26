@@ -26,6 +26,7 @@ export class PythonTerminal {
 	public constructor(element: HTMLElement, lang: Language) {
 		this.lang = lang;
 		this.terminal.open(element);
+		this.terminal.fit();
 		EVENT_BUS.subscribe("postresize", () => this.terminal.fit());
 	}
 	
@@ -33,7 +34,7 @@ export class PythonTerminal {
 		this.launches += 1;
 		this.terminal.write("\r");
 		this.terminal.clear();
-		this.terminal.writeln(" === " + this.lang.get("launch-nr") + this.launches + " ===");
+		this.terminal.writeln(">> " + this.lang.get("launch-nr") + this.launches);
 		let proc = child_process.spawn("python3", [pythonProgramPath]);
 		proc.stdout.on("data", data => {
 			this.write(this.format(data));
