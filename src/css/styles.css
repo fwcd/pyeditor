@@ -45,10 +45,15 @@ button:active {
 	flex: 0 0 auto;
 	width: 100%;
 }
+
 #editor {
 	flex: 1 0 auto;
 	width: 100%;
 	height: 0px; /* The height is managed by flex-grow */
+}
+
+.editor-line-highlight {
+	background-color: rgba(251, 255, 0, 0.692);
 }
 
 .terminal-themed {

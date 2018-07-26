@@ -4,9 +4,12 @@ import { Analyzer } from "./analyzer";
 import { FileLoader } from "./fileLoader";
 import { Language } from "./language";
 import { EVENT_BUS } from "./renderer";
+import { EditorLineHighlighter } from "./editorLineHighlighter";
 
 export class Editor {
 	private model: monaco.editor.ITextModel = null;
+	private editor: monaco.editor.IStandaloneCodeEditor;
+	private highlighter: EditorLineHighlighter;
 	private analyzer: Analyzer;
 	private fileLoader: FileLoader;
 	private lang: Language;
@@ -17,7 +20,7 @@ export class Editor {
 	
 	public initialize(): void {
 		let editorWidget = document.getElementById('editor');
-		let editor = monaco.editor.create(editorWidget, {
+		this.editor = monaco.editor.create(editorWidget, {
 			value: [
 				"print(\"" + this.lang.get("helloworld") + "\")",
 				""
@@ -29,9 +32,10 @@ export class Editor {
 			scrollBeyondLastLine: false,
 			autoIndent: true
 		});
-		this.model = editor.getModel();
+		this.model = this.editor.getModel();
 		this.analyzer = new Analyzer(this.model);
-		EVENT_BUS.subscribe("resize", () => editor.layout());
+		this.highlighter = new EditorLineHighlighter(this.editor);
+		EVENT_BUS.subscribe("resize", () => this.editor.layout());
 		this.model.updateOptions({
 			trimAutoWhitespace: false,
 			insertSpaces: true
