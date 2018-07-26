@@ -19,7 +19,8 @@ export class Editor {
 		let editorWidget = document.getElementById('editor');
 		let editor = monaco.editor.create(editorWidget, {
 			value: [
-				"print(\"" + this.lang.get("helloworld") + "\")"
+				"print(\"" + this.lang.get("helloworld") + "\")",
+				""
 			].join('\n'),
 			language: 'python',
 			minimap: {
@@ -31,16 +32,15 @@ export class Editor {
 		this.model = editor.getModel();
 		this.analyzer = new Analyzer(this.model);
 		EVENT_BUS.subscribe("resize", () => editor.layout());
-		// TODO: Observe model changes to update it's
-		// options accordingly.
 		this.model.updateOptions({
-			trimAutoWhitespace: false
+			trimAutoWhitespace: false,
+			insertSpaces: true
 		});
 		this.fileLoader = new FileLoader(this.model);
 		monaco.languages.setLanguageConfiguration('python', {
 			onEnterRules: [
 				{
-					beforeText: /:/,
+					beforeText: /:$/,
 					action: {
 						indentAction: monaco.languages.IndentAction.Indent
 					}

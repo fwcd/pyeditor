@@ -48,8 +48,7 @@ export class PythonTerminal {
 	
 	public run(pythonProgramPath: string): void {
 		this.launches += 1;
-		this.terminal.write("\r");
-		this.terminal.clear();
+		this.terminal.reset();
 		this.terminal.writeln(">> " + this.lang.get("launch-nr") + this.launches);
 		this.activeProcess = child_process.spawn(this.versionChooser.getSelectedVersion() || "python", [pythonProgramPath]);
 		this.activeProcess.stdout.on("data", data => {
