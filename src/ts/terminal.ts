@@ -32,10 +32,17 @@ export class PythonTerminal {
 		this.versionChooser = versionChooser;
 		this.terminal.open(element);
 		this.terminal.fit();
-		this.terminal.on("data", data => {
-			let str = data.replace(/\r/g, '\n\r');
-			this.input += str;
-			this.terminal.write(str);
+		this.terminal.on("key", (key, event) => {
+			if (event.keyCode == 8 /* Backspace */) {
+				if (this.input.length > 0) {
+					this.input = this.input.substring(0, this.input.length - 1);
+				}
+				this.terminal.write("\b \b");
+			} else {
+				let str = key.replace(/\r/g, '\n\r');
+				this.input += str;
+				this.terminal.write(str);
+			}
 		});
 		this.terminal.on("linefeed", () => {
 			if (this.input.length > 0 && this.activeProcess) {
