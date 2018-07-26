@@ -30,7 +30,9 @@ export class Editor {
 			},
 			scrollBeyondLastLine: false,
 			autoIndent: true,
-			renderIndentGuides: false
+			renderIndentGuides: false,
+			wordBasedSuggestions: false,
+			quickSuggestions: false
 		});
 		this.model = this.editor.getModel();
 		let analyzer = new Analyzer(this.model);
@@ -106,5 +108,9 @@ export class Editor {
 	
 	public getFileLoader(): FileLoader {
 		return this.fileLoader;
+	}
+	
+	public getHighlighter(): EditorLineHighlighter {
+		return this.highlighter;
 	}
 }

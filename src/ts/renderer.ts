@@ -54,8 +54,17 @@ splitHandle.addEventListener("pointerup", e => {
 // Terminal
 
 let versionChooser = new PythonChooser(document.getElementById("python-chooser") as HTMLSelectElement);
-let terminal = new PythonTerminal(document.getElementById("terminal"), versionChooser, lang);
-let runner = new Runner(document.getElementById("run-button"), editor, terminal, lang);
+let terminal = new PythonTerminal(
+	document.getElementById("terminal"),
+	versionChooser,
+	editor.getHighlighter(),
+	lang
+);
+let runner = new Runner({
+	runButton: document.getElementById("run-button"),
+	stepButton: document.getElementById("step-button"),
+	stopButton: document.getElementById("stop-button")
+}, editor, terminal, lang);
 let repl = new PythonREPL(document.getElementById("interpreter-button"), terminal);
 
 // Menu bar

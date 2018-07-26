@@ -1,10 +1,13 @@
 open=Öffnen
 save=Speichern
 save-as=Speichern unter
-run=Programm starten
+run=Starten
 filemenu=Datei
 helloworld=Hallo Welt
 please-save-msg=Bitte speichere deine Datei!
 launch-nr=Programmstart Nr. 
 anypython=Beliebiges Python
-run-interpreter=Interpreter starten
+run-interpreter=Interpreter
+code-completions=Codevervollständigung
+step=Schrittweise ausführen
+stop=Stoppen

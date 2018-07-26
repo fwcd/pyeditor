@@ -1,10 +1,11 @@
-import { Terminal } from "xterm";
-import { EVENT_BUS } from "./renderer";
-import { Language } from "./language";
-import * as fit from 'xterm/lib/addons/fit/fit';
-import * as child_process from "child_process";
 import chalk from "chalk";
+import * as child_process from "child_process";
+import { Terminal } from "xterm";
+import * as fit from 'xterm/lib/addons/fit/fit';
+import { EditorLineHighlighter } from "./editorLineHighlighter";
+import { Language } from "./language";
 import { PythonChooser } from "./pythonChooser";
+import { EVENT_BUS } from "./renderer";
 
 // Apply and declare prototype extension method "fit()"
 Terminal.applyAddon(fit);
@@ -25,11 +26,19 @@ export class PythonTerminal {
 	private input = "";
 	private lang: Language;
 	private launches = 0;
+	private lineHighlighter: EditorLineHighlighter;
 	private versionChooser: PythonChooser;
+	private isStepping = false;
 	
-	public constructor(element: HTMLElement, versionChooser: PythonChooser, lang: Language) {
+	public constructor(
+		element: HTMLElement,
+		versionChooser: PythonChooser,
+		lineHighlighter: EditorLineHighlighter,
+		lang: Language
+	) {
 		this.lang = lang;
 		this.versionChooser = versionChooser;
+		this.lineHighlighter = lineHighlighter;
 		this.terminal.open(element);
 		this.terminal.fit();
 		this.terminal.on("key", (key, event) => {
@@ -54,20 +63,51 @@ export class PythonTerminal {
 	}
 	
 	public runPythonShell(): void {
-		this.terminal.reset();
+		this.clear();
 		this.attach(child_process.spawn(this.getPythonCommand(), ["-i", "-u"]));
 		this.focus();
 	}
 	
-	public run(pythonProgramPath: string): void {
+	public step(pythonProgramPath: string): void {
+		this.clear();
+		this.attach(child_process.spawn(
+			this.getPythonCommand(),
+			["-m", "pdb", pythonProgramPath]
+		), true);
+	}
+	
+	private runWithStep(pythonProgramPath: string): void {
 		this.launches += 1;
-		this.terminal.reset();
+		this.clear();
 		this.terminal.writeln(">> " + this.lang.get("launch-nr") + this.launches);
 		this.attach(child_process.spawn(
 			this.getPythonCommand(),
 			[pythonProgramPath]
 		));
 		this.focus();
+	}
+	
+	public stop(): void {
+		if (this.activeProcess) {
+			this.activeProcess.kill();
+			this.removeActiveProcess();
+		}
+		this.clear();
+	}
+	
+	public run(pythonProgramPath: string): void {
+		this.launches += 1;
+		this.clear();
+		this.terminal.writeln(">> " + this.lang.get("launch-nr") + this.launches);
+		this.attach(child_process.spawn(
+			this.getPythonCommand(),
+			[pythonProgramPath]
+		));
+		this.focus();
+	}
+	
+	private clear(): void {
+		this.terminal.reset();
 	}
 	
 	private focus(): void {
@@ -78,7 +118,7 @@ export class PythonTerminal {
 		return this.versionChooser.getSelectedVersion() || "python";
 	}
 	
-	private attach(process: child_process.ChildProcess): void {
+	private attach(process: child_process.ChildProcess, stepping?: boolean): void {
 		this.activeProcess = process;
 		this.activeProcess.stdout.on("data", data => {
 			this.write(this.format(data));
@@ -87,8 +127,16 @@ export class PythonTerminal {
 			this.write(chalk.redBright(this.format(data)));
 		});
 		this.activeProcess.on("exit", () => {
-			this.activeProcess = undefined;
+			this.removeActiveProcess();
 		});
+		if (stepping) {
+			this.isStepping = true;
+		}
+	}
+	
+	private removeActiveProcess(): void {
+		this.activeProcess = undefined;
+		this.isStepping = false;
 	}
 	
 	private format(data: Buffer | string): string {
