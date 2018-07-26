@@ -11,17 +11,12 @@ export class Editor {
 	private editor: monaco.editor.IStandaloneCodeEditor;
 	private highlighter: EditorLineHighlighter;
 	private fileLoader: FileLoader;
-	private lang: Language;
-	
-	public constructor(language: Language) {
-		this.lang = language;
-	}
 	
 	public initialize(): void {
 		let editorWidget = document.getElementById('editor');
 		this.editor = monaco.editor.create(editorWidget, {
 			value: [
-				"print(\"" + this.lang.get("helloworld") + "\")",
+				"print(\"Hallo Welt\")",
 				""
 			].join('\n'),
 			language: 'python',

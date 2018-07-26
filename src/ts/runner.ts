@@ -1,11 +1,9 @@
 import { Editor } from "./editor";
 import { PythonTerminal } from "./terminal";
-import { Language } from "./language";
 
 export class Runner {
 	private editor: Editor;
 	private terminal: PythonTerminal;
-	private lang: Language;
 	
 	public constructor(
 		buttons: {
@@ -14,12 +12,10 @@ export class Runner {
 			stopButton: HTMLElement
 		},
 		editor: Editor,
-		terminal: PythonTerminal,
-		lang: Language
+		terminal: PythonTerminal
 	) {
 		this.editor = editor;
 		this.terminal = terminal;
-		this.lang = lang;
 		
 		buttons.runButton.addEventListener("click", () => this.run());
 		buttons.stepButton.addEventListener("click", () => this.step());
@@ -47,7 +43,7 @@ export class Runner {
 			}
 			callback(filePath);
 		} else {
-			alert(this.lang.get("please-save-msg"));
+			alert("Bitte speichere deine Datei!");
 		}
 	}
 }

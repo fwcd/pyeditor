@@ -13,6 +13,7 @@ export class PythonChooser {
 			// Highest priority = highest index
 			"python2",
 			"python",
+			"python3.7",
 			"python3"
 		);
 	}

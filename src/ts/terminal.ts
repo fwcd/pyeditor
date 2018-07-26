@@ -26,7 +26,6 @@ export class PythonTerminal {
 	});
 	private activeProcess?: child_process.ChildProcess;
 	private input = "";
-	private lang: Language;
 	private launches = 0;
 	private debugSession?: PythonDebugSession;
 	private editor: Editor;
@@ -35,10 +34,8 @@ export class PythonTerminal {
 	public constructor(
 		element: HTMLElement,
 		versionChooser: PythonChooser,
-		editor: Editor,
-		lang: Language
+		editor: Editor
 	) {
-		this.lang = lang;
 		this.versionChooser = versionChooser;
 		this.editor = editor;
 		this.terminal.open(element);
@@ -114,7 +111,7 @@ export class PythonTerminal {
 	public run(pythonProgramPath: string): void {
 		this.launches += 1;
 		this.stop();
-		this.terminal.writeln(">> " + this.lang.get("launch-nr") + this.launches);
+		this.terminal.writeln(">> Programmstart Nr. " + this.launches);
 		this.attach(child_process.spawn(
 			this.getPythonCommand(),
 			[pythonProgramPath]
@@ -127,7 +124,7 @@ export class PythonTerminal {
 	}
 	
 	private getPythonCommand(): string {
-		return this.versionChooser.getSelectedVersion() || "python";
+		return this.versionChooser.getSelectedVersion() || "python3";
 	}
 	
 	private attach(process: child_process.ChildProcess): void {

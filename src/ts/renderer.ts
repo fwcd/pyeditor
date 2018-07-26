@@ -2,18 +2,12 @@ import { remote } from "electron";
 import * as path from "path";
 import { Editor } from "./editor";
 import { EventBus } from "./eventBus";
-import { parseLanguageFrom } from "./language";
-import { PythonTerminal } from "./terminal";
-import { Runner } from "./runner";
 import { PythonChooser } from "./pythonChooser";
 import { PythonREPL } from "./pythonREPL";
+import { Runner } from "./runner";
+import { PythonTerminal } from "./terminal";
 
 const {Menu} = remote;
-
-// Language
-
-let lang = parseLanguageFrom("lang/german.txt");
-lang.applyToDOM();
 
 // Global event handling
 
@@ -25,7 +19,7 @@ EVENT_BUS.subscribe("changefilepath", fileName => {
 
 // Monaco
 
-let editor = new Editor(lang);
+let editor = new Editor();
 declare var amdRequire;
 amdRequire(['vs/editor/editor.main'], () => editor.initialize());
 
@@ -57,46 +51,55 @@ let versionChooser = new PythonChooser(document.getElementById("python-chooser")
 let terminal = new PythonTerminal(
 	document.getElementById("terminal"),
 	versionChooser,
-	editor,
-	lang
+	editor
 );
 let runner = new Runner({
 	runButton: document.getElementById("run-button"),
 	stepButton: document.getElementById("step-button"),
 	stopButton: document.getElementById("stop-button")
-}, editor, terminal, lang);
+}, editor, terminal);
 let repl = new PythonREPL(document.getElementById("interpreter-button"), terminal);
 
 // Menu bar
 
 let menu: Electron.MenuItemConstructorOptions[] = [
 	{
-		label: lang.get("filemenu"),
+		label: "Datei",
 		submenu: [
 			{
-				label: lang.get("open"),
+				label: "Öffnen",
 				accelerator: "CmdOrCtrl+O",
 				click(): void { editor.getFileLoader().open(); }
 			},
 			{
-				label: lang.get("save"),
+				label: "Speichern",
 				accelerator: "CmdOrCtrl+S",
 				click(): void { editor.getFileLoader().save(); }
 			},
 			{
-				label: lang.get("save-as"),
+				label: "Speichern unter",
 				accelerator: "CmdOrCtrl+Shift+S",
 				click(): void { editor.getFileLoader().saveAs(); }
 			},
+			{ type: "separator" },
 			{
-				label: lang.get("run"),
+				label: "Starten",
 				accelerator: "CmdOrCtrl+R",
 				click(): void { runner.run(); }
 			},
 			{
-				label: lang.get("run-interpreter"),
+				label: "Interpreter",
 				accelerator: "CmdOrCtrl+Shift+R",
 				click(): void { repl.run(); }
+			}
+		]
+	},
+	{
+		label: "Über",
+		submenu: [
+			{
+				label: "Über PyEditor",
+				click(): void { alert("PyEditor v0.1 \n\n von fwcd"); }
 			}
 		]
 	}
@@ -113,6 +116,8 @@ if (process.platform === "darwin") {
 			{role: 'hide'},
 			{role: 'hideothers'},
 			{role: 'unhide'},
+			{type: 'separator'},
+			{role: 'toggledevtools'},
 			{type: 'separator'},
 			{role: 'quit'}
 		]

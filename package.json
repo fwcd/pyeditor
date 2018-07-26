@@ -2,6 +2,7 @@
 	"name": "pyeditor",
 	"version": "1.0.0",
 	"description": "A lightweight Python editor",
+	"main": "src/js/main.js",
 	"scripts": {
 		"watch": "tsc -w",
 		"build": "tsc",
@@ -18,6 +19,7 @@
 	"dependencies": {
 		"chalk": "^2.4.1",
 		"command-exists": "^1.2.7",
+		"fix-path": "^2.1.0",
 		"monaco-editor": "^0.13.1",
 		"xterm": "^3.5.1"
 	}
