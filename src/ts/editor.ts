@@ -10,7 +10,6 @@ export class Editor {
 	private model: monaco.editor.ITextModel = null;
 	private editor: monaco.editor.IStandaloneCodeEditor;
 	private highlighter: EditorLineHighlighter;
-	private analyzer: Analyzer;
 	private fileLoader: FileLoader;
 	private lang: Language;
 	
@@ -30,10 +29,11 @@ export class Editor {
 				enabled: false
 			},
 			scrollBeyondLastLine: false,
-			autoIndent: true
+			autoIndent: true,
+			renderIndentGuides: false
 		});
 		this.model = this.editor.getModel();
-		this.analyzer = new Analyzer(this.model);
+		let analyzer = new Analyzer(this.model);
 		this.highlighter = new EditorLineHighlighter(this.editor);
 		EVENT_BUS.subscribe("resize", () => this.editor.layout());
 		this.model.updateOptions({
@@ -54,8 +54,8 @@ export class Editor {
 		monaco.languages.registerCompletionItemProvider('python', {
 			provideCompletionItems(model, pos, token): monaco.Promise<monaco.languages.CompletionList> {
 				return new monaco.Promise((resolve, reject) => {
-					this.analyzer.parseEntire(); // TODO: Incremental parsing
-					let ast = this.analyzer.getAST();
+					analyzer.parseEntire(); // TODO: Incremental parsing
+					let ast = analyzer.getAST();
 					let node = ast.nodeAt(pos.lineNumber);
 					let list: monaco.languages.CompletionList = {
 						isIncomplete: false,
@@ -76,8 +76,8 @@ export class Editor {
 		monaco.languages.registerDefinitionProvider('python', {
 			provideDefinition(model, pos, token): monaco.Promise<monaco.languages.Location | monaco.languages.Location[]> {
 				return new monaco.Promise((resolve, reject) => {
-					this.analyzer.parseEntire(); // TODO: Incremental parsing
-					let ast = this.analyzer.getAST();
+					analyzer.parseEntire(); // TODO: Incremental parsing
+					let ast = analyzer.getAST();
 					let node = ast.nodeAt(pos.lineNumber);
 					let word = model.getWordAtPosition(pos).word;
 					let declaration = ast.findVariable(word) || ast.findFunction(word);
