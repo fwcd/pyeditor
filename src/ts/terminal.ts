@@ -38,19 +38,35 @@ export class PythonTerminal {
 			this.terminal.write(str);
 		});
 		this.terminal.on("linefeed", () => {
-			if (this.activeProcess) {
-				this.activeProcess.stdin.write(this.input, "utf-8");
+			if (this.input.length > 0 && this.activeProcess) {
+				this.activeProcess.stdin.write(this.input.trim() + "\n", "utf-8");
 			}
 			this.input = "";
 		});
 		EVENT_BUS.subscribe("postresize", () => this.terminal.fit());
 	}
 	
+	public runPythonShell(): void {
+		this.terminal.reset();
+		this.attach(child_process.spawn(this.getPythonCommand(), ["-i", "-u"]));
+	}
+	
 	public run(pythonProgramPath: string): void {
 		this.launches += 1;
 		this.terminal.reset();
 		this.terminal.writeln(">> " + this.lang.get("launch-nr") + this.launches);
-		this.activeProcess = child_process.spawn(this.versionChooser.getSelectedVersion() || "python", [pythonProgramPath]);
+		this.attach(child_process.spawn(
+			this.getPythonCommand(),
+			[pythonProgramPath]
+		));
+	}
+	
+	private getPythonCommand(): string {
+		return this.versionChooser.getSelectedVersion() || "python";
+	}
+	
+	private attach(process: child_process.ChildProcess): void {
+		this.activeProcess = process;
 		this.activeProcess.stdout.on("data", data => {
 			this.write(this.format(data));
 		});

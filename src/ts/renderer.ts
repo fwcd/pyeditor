@@ -6,6 +6,7 @@ import { parseLanguageFrom } from "./language";
 import { PythonTerminal } from "./terminal";
 import { Runner } from "./runner";
 import { PythonChooser } from "./pythonChooser";
+import { PythonREPL } from "./pythonREPL";
 
 const {Menu} = remote;
 
@@ -55,6 +56,7 @@ splitHandle.addEventListener("pointerup", e => {
 let versionChooser = new PythonChooser(document.getElementById("python-chooser") as HTMLSelectElement);
 let terminal = new PythonTerminal(document.getElementById("terminal"), versionChooser, lang);
 let runner = new Runner(document.getElementById("run-button"), editor, terminal, lang);
+let repl = new PythonREPL(document.getElementById("interpreter-button"), terminal);
 
 // Menu bar
 
@@ -81,6 +83,11 @@ let menu: Electron.MenuItemConstructorOptions[] = [
 				label: lang.get("run"),
 				accelerator: "CmdOrCtrl+R",
 				click(): void { runner.run(); }
+			},
+			{
+				label: lang.get("run-interpreter"),
+				accelerator: "CmdOrCtrl+Shift+R",
+				click(): void { repl.run(); }
 			}
 		]
 	}
