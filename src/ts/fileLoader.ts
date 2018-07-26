@@ -1,5 +1,6 @@
 import { remote } from "electron";
 import * as fs from "fs";
+import { EVENT_BUS } from "./renderer";
 
 export class FileLoader {
 	private model: monaco.editor.ITextModel;
@@ -35,6 +36,7 @@ export class FileLoader {
 	private openFile(filePath: string): void {
 		fs.readFile(filePath, "utf-8", (err, data) => {
 			this.model.setValue(data);
+			EVENT_BUS.fire("changefilepath", filePath);
 		});
 	}
 	
@@ -45,5 +47,6 @@ export class FileLoader {
 		}, err => {
 			if (err) console.log(err);
 		});
+		EVENT_BUS.fire("changefilepath", filePath);
 	}
 }

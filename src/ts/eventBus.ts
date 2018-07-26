@@ -1,21 +1,21 @@
 export class EventBus {
-	private listeners: { [event: string]: (() => void)[] } = {};
+	private listeners: { [eventName: string]: ((event?: any) => void)[] } = {};
 	
-	public fire(event: string): void {
-		if (event in this.listeners) {
-			this.listeners[event].forEach(it => it());
+	public fire(eventName: string, event?: any): void {
+		if (eventName in this.listeners) {
+			this.listeners[eventName].forEach(it => it(event));
 		};
 	}
 	
-	public subscribe(event: string, listener: () => void): void {
-		if (!(event in this.listeners)) {
-			this.listeners[event] = [];
+	public subscribe(eventName: string, listener: (event: any) => void): void {
+		if (!(eventName in this.listeners)) {
+			this.listeners[eventName] = [];
 		}
-		this.listeners[event].push(listener);
+		this.listeners[eventName].push(listener);
 	}
 	
-	public unsubscribe(event: string, listener: () => void): void {
-		let eventListeners = this.listeners[event];
+	public unsubscribe(eventName: string, listener: (event: any) => void): void {
+		let eventListeners = this.listeners[eventName];
 		eventListeners.splice(eventListeners.indexOf(listener), 1);
 	}
 }

@@ -2,6 +2,7 @@ import { setupEditor } from "./editor";
 import { EventBus } from "./eventBus";
 import { parseLanguageFrom } from "./language";
 import { PythonTerminal } from "./terminal";
+import * as path from "path";
 
 export const EVENT_BUS = new EventBus();
 
@@ -9,6 +10,9 @@ declare var amdRequire;
 amdRequire(['vs/editor/editor.main'], setupEditor);
 
 window.addEventListener("resize", () => EVENT_BUS.fire("resize"));
+EVENT_BUS.subscribe("changefilepath", fileName => {
+	document.title = "PyEditor - " + path.basename(fileName);
+});
 
 let splitHandle = document.getElementById("split-drag");
 let splitDragged = false;
