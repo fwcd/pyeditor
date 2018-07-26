@@ -17,6 +17,7 @@
 	},
 	"dependencies": {
 		"chalk": "^2.4.1",
+		"command-exists": "^1.2.7",
 		"monaco-editor": "^0.13.1",
 		"xterm": "^3.5.1"
 	}

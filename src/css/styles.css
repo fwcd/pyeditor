@@ -12,12 +12,16 @@ button {
 	color: black;
 	size: 1.5em;
 	display: inline-flex;
+	flex-direction: row;
 	align-items: center;
 	cursor: pointer;
 }
 
 .buttonbar {
 	cursor: default;
+	display: inline-flex;
+	flex-direction: row;
+	align-items: center;
 }
 
 button:hover {

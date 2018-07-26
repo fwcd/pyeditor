@@ -5,6 +5,7 @@ import { EventBus } from "./eventBus";
 import { parseLanguageFrom } from "./language";
 import { PythonTerminal } from "./terminal";
 import { Runner } from "./runner";
+import { PythonChooser } from "./pythonChooser";
 
 const {Menu} = remote;
 
@@ -51,7 +52,8 @@ splitHandle.addEventListener("pointerup", e => {
 
 // Terminal
 
-let terminal = new PythonTerminal(document.getElementById("terminal"), lang);
+let versionChooser = new PythonChooser(document.getElementById("python-chooser") as HTMLSelectElement);
+let terminal = new PythonTerminal(document.getElementById("terminal"), versionChooser, lang);
 let runner = new Runner(document.getElementById("run-button"), editor, terminal, lang);
 
 // Menu bar

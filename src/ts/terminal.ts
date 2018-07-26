@@ -4,6 +4,7 @@ import { Language } from "./language";
 import * as fit from 'xterm/lib/addons/fit/fit';
 import * as child_process from "child_process";
 import chalk from "chalk";
+import { PythonChooser } from "./pythonChooser";
 
 // Apply and declare prototype extension method "fit()"
 Terminal.applyAddon(fit);
@@ -22,9 +23,11 @@ export class PythonTerminal {
 	});
 	private lang: Language;
 	private launches = 0;
+	private versionChooser: PythonChooser;
 	
-	public constructor(element: HTMLElement, lang: Language) {
+	public constructor(element: HTMLElement, versionChooser: PythonChooser, lang: Language) {
 		this.lang = lang;
+		this.versionChooser = versionChooser;
 		this.terminal.open(element);
 		this.terminal.fit();
 		EVENT_BUS.subscribe("postresize", () => this.terminal.fit());
@@ -35,7 +38,7 @@ export class PythonTerminal {
 		this.terminal.write("\r");
 		this.terminal.clear();
 		this.terminal.writeln(">> " + this.lang.get("launch-nr") + this.launches);
-		let proc = child_process.spawn("python3", [pythonProgramPath]);
+		let proc = child_process.spawn(this.versionChooser.getSelectedVersion() || "python", [pythonProgramPath]);
 		proc.stdout.on("data", data => {
 			this.write(this.format(data));
 		});

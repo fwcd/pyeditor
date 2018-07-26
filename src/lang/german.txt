@@ -6,3 +6,4 @@ filemenu=Datei
 helloworld=Hallo Welt
 please-save-msg=Bitte speichere deine Datei!
 launch-nr=Programmstart Nr. 
+anypython=Beliebiges Python
