@@ -2,12 +2,12 @@ import chalk from "chalk";
 import * as child_process from "child_process";
 import { Terminal } from "xterm";
 import * as fit from 'xterm/lib/addons/fit/fit';
-import { PythonChooser } from "./pythonChooser";
-import { EVENT_BUS } from "./renderer";
-import { PythonDebugSession } from "./pythonDebug";
-import { Editor } from "./editor";
+import { VersionChooser } from "./VersionChooser";
+import { PythonDebugSession } from "./PythonDebugSession";
+import { Editor } from "./Editor";
 import { clipboard } from "electron";
-import { ctrlOrCmdPressed } from "./utils/keyUtils";
+import { ctrlOrCmdPressed } from "../utils/keyUtils";
+import { EventBus } from "../utils/EventBus";
 
 // Apply and declare prototype extension method "fit()"
 Terminal.applyAddon(fit);
@@ -31,7 +31,7 @@ export class PythonTerminal {
 	private launches = 0;
 	private debugSession?: PythonDebugSession;
 	private editor: Editor;
-	private versionChooser: PythonChooser;
+	private versionChooser: VersionChooser;
 	
 	private history: string[] = [];
 	private historyOffset = 0;
@@ -41,8 +41,9 @@ export class PythonTerminal {
 	
 	public constructor(
 		element: HTMLElement,
-		versionChooser: PythonChooser,
-		editor: Editor
+		versionChooser: VersionChooser,
+		editor: Editor,
+		eventBus: EventBus
 	) {
 		this.versionChooser = versionChooser;
 		this.editor = editor;
@@ -107,7 +108,7 @@ export class PythonTerminal {
 			this.cachedCurrentInput = "";
 			this.input = "";
 		});
-		EVENT_BUS.subscribe("postresize", () => this.terminal.fit());
+		eventBus.subscribe("postresize", () => this.terminal.fit());
 	}
 	
 	private insertAtCursor(delta: string): void {

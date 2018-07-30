@@ -1,16 +1,20 @@
-/// <reference path="../../node_modules/monaco-editor/monaco.d.ts" />
+/// <reference path="../../../node_modules/monaco-editor/monaco.d.ts" />
 
-import { Analyzer } from "./analyzer";
-import { FileLoader } from "./fileLoader";
-import { Language } from "./language";
-import { EVENT_BUS } from "./renderer";
+import { Analyzer } from "../model/Analyzer";
 import { EditorLineHighlighter } from "./editorLineHighlighter";
+import { FileLoader } from "./fileLoader";
+import { EventBus } from "../utils/EventBus";
 
 export class Editor {
+	private eventBus: EventBus;
 	private model: monaco.editor.ITextModel = null;
 	private editor: monaco.editor.IStandaloneCodeEditor;
 	private highlighter: EditorLineHighlighter;
 	private fileLoader: FileLoader;
+	
+	public constructor(eventBus: EventBus) {
+		this.eventBus = eventBus;
+	}
 	
 	public initialize(): void {
 		let editorWidget = document.getElementById('editor');
@@ -32,12 +36,12 @@ export class Editor {
 		this.model = this.editor.getModel();
 		let analyzer = new Analyzer(this.model);
 		this.highlighter = new EditorLineHighlighter(this.editor);
-		EVENT_BUS.subscribe("resize", () => this.editor.layout());
+		this.eventBus.subscribe("resize", () => this.editor.layout());
 		this.model.updateOptions({
 			trimAutoWhitespace: false,
 			insertSpaces: true
 		});
-		this.fileLoader = new FileLoader(this.model);
+		this.fileLoader = new FileLoader(this.model, this.eventBus);
 		monaco.languages.setLanguageConfiguration('python', {
 			onEnterRules: [
 				{

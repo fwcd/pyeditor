@@ -1,19 +1,21 @@
 import { remote } from "electron";
 import * as fs from "fs";
-import { EVENT_BUS } from "./renderer";
+import { EventBus } from "../utils/EventBus";
 
 export class FileLoader {
 	private model: monaco.editor.ITextModel;
 	private unsaved = false;
 	private currentFilePath?: string;
+	private eventBus: EventBus;
 	
-	public constructor(model: monaco.editor.ITextModel) {
+	public constructor(model: monaco.editor.ITextModel, eventBus: EventBus) {
 		this.model = model;
+		this.eventBus = eventBus;
 		
 		this.model.onDidChangeContent(() => {
 			if (!this.unsaved) {
 				this.unsaved = true;
-				EVENT_BUS.fire("unsaved");
+				eventBus.fire("unsaved");
 			}
 		});
 		
@@ -22,8 +24,8 @@ export class FileLoader {
 		this.registerSaveAsButton(document.getElementById("save-as-button"));
 		
 		let saveIcon = document.getElementById("save-icon") as HTMLImageElement;
-		EVENT_BUS.subscribe("saved", () => saveIcon.src = "img/saveInactiveIcon.png");
-		EVENT_BUS.subscribe("unsaved", () => saveIcon.src = "img/saveIcon.png");
+		eventBus.subscribe("saved", () => saveIcon.src = "img/saveInactiveIcon.png");
+		eventBus.subscribe("unsaved", () => saveIcon.src = "img/saveIcon.png");
 	}
 	
 	private registerOpenButton(button: HTMLElement): void {
@@ -87,13 +89,13 @@ export class FileLoader {
 	private changeFilePathTo(filePath: string): void {
 		if (!this.currentFilePath || (this.currentFilePath !== filePath)) {
 			this.currentFilePath = filePath;
-			EVENT_BUS.fire("changefilepath", filePath);
+			this.eventBus.fire("changefilepath", filePath);
 		}
 	}
 	
 	private setSaved(filePath: string): void {
 		this.unsaved = false;
-		EVENT_BUS.fire("saved", filePath);
+		this.eventBus.fire("saved", filePath);
 	}
 	
 	public getCurrentFilePath(): string {

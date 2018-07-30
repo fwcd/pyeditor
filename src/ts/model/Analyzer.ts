@@ -1,5 +1,5 @@
-import { AST, ASTNode, ASTVariable, TextPosition } from "./ast";
-import { Set } from "./utils/set";
+import { AST, ASTNode, ASTVariable, TextPosition } from "./AST";
+import { Set } from "../utils/set";
 
 const functionMatcher = /^\s*def ([\w]+)\((.*)\):$/;
 const variableMatcher = /^\s*(\w+) = (.+)$/;

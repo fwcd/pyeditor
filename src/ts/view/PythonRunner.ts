@@ -1,7 +1,7 @@
-import { Editor } from "./editor";
-import { PythonTerminal } from "./terminal";
+import { Editor } from "./Editor";
+import { PythonTerminal } from "./PythonTerminal";
 
-export class Runner {
+export class PythonRunner {
 	private editor: Editor;
 	private terminal: PythonTerminal;
 	

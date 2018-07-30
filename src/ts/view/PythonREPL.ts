@@ -1,4 +1,4 @@
-import { PythonTerminal } from "./terminal";
+import { PythonTerminal } from "./PythonTerminal";
 
 export class PythonREPL {
 	private terminal: PythonTerminal;

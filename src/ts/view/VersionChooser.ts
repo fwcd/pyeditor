@@ -1,8 +1,8 @@
-import { clearChilds } from "./utils/domUtils";
+import { clearChilds } from "../utils/domUtils";
 
 let commandExists = require("command-exists");
 
-export class PythonChooser {
+export class VersionChooser {
 	private element: HTMLSelectElement;
 	private versions: string[] = [];
 	
