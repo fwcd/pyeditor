@@ -1,12 +1,8 @@
 import json
 import sys
+from argparse import ArgumentParser
 from bdb import Bdb
-
-def writejson(obj):
-    print(json.dumps(obj))
-
-def readjson():
-    return json.loads(input())
+from socket import socket, AF_INET, SOCK_STREAM
 
 def expect(dict_obj, key, value):
     try:
@@ -15,9 +11,17 @@ def expect(dict_obj, key, value):
         raise ValueError(str(dict_obj) + "[" + str(key) + "] was not " + str(value))
 
 class JsonDebugger(Bdb):
-    def runfile(self, filename):
+    def runfile(self, filename, jsonin, jsonout):
+        self.jsonin = jsonin
+        self.jsonout = jsonout
         self.mainfilepath = self.canonic(filename)
         self.run("exec(open(%r).read())" % self.mainfilepath)
+
+    def writejson(self, obj):
+        self.jsonout.send((json.dumps(obj) + "\n").encode())
+
+    def readjson(self):
+        return json.loads(self.jsonin.readline())
     
     # Override Bdb methods
     
@@ -31,11 +35,11 @@ class JsonDebugger(Bdb):
         is_main_file = (self.canonic(frame.f_code.co_filename) == "<string>")
         if is_main_file:
             line = frame.f_lineno
-            writejson({
+            self.writejson({
                 "type": "break",
                 "linenumber": line
             })
-            msg = readjson()
+            msg = self.readjson()
             expect(msg, "type", "continue")
 
     def user_return(self, frame, return_value):
@@ -50,5 +54,29 @@ class JsonDebugger(Bdb):
 
 # TODO: Use sockets and parse filename from program args
 
-filename = "playground.py"
-JsonDebugger().runfile(filename)
+def main():
+    parser = ArgumentParser(description="JSON debugger")
+    parser.add_argument("--file", help="A path to the file to be debugged")
+    args = parser.parse_args()
+    
+    serversocket = socket(AF_INET, SOCK_STREAM)
+    serversocket.bind(("", 0))
+    serversocket.listen(4)
+    
+    serveraddr = serversocket.getsockname()
+    
+    sys.stdout.write(json.dumps({
+        "type": "serverinit",
+        "host": serveraddr[0],
+        "port": serveraddr[1]
+    }) + "\n")
+    sys.stdout.flush()
+    response = sys.stdin.readline()
+    expect(json.loads(response), "type", "clientinit")
+    
+    (clientsocket, address) = serversocket.accept()
+    jsonin = clientsocket.makefile()
+    jsonout = clientsocket
+    JsonDebugger().runfile(args.file, jsonin, jsonout)
+
+main()
