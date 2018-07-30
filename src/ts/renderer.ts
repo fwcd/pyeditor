@@ -95,6 +95,14 @@ let menu: Electron.MenuItemConstructorOptions[] = [
 		]
 	},
 	{
+		label: "Bearbeiten",
+		submenu: [
+			{role: 'cut'},
+			{role: 'copy'},
+			{role: 'paste'}
+		]
+	},
+	{
 		label: "Über",
 		submenu: [
 			{
@@ -109,7 +117,7 @@ if (process.platform === "darwin") {
 	menu.unshift({
 		label: "PyEditor",
 		submenu: [
-			{role: "about"},
+			{role: 'about'},
 			{type: 'separator'},
 			{role: 'services', submenu: []},
 			{type: 'separator'},

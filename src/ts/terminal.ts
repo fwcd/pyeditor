@@ -10,6 +10,9 @@ import { Editor } from "./editor";
 // Apply and declare prototype extension method "fit()"
 Terminal.applyAddon(fit);
 
+let inputChar = /^[a-zA-Zß°äöüÄÖÜ1234567890!'"\\§$%&\/\(\)\=\?\+\-#\.,;:{}\[\]\*<>\| ]$/;
+let newline = /[\r\n]+/;
+
 declare module "xterm" {
 	interface Terminal {
 		fit(): void;
@@ -29,6 +32,8 @@ export class PythonTerminal {
 	private editor: Editor;
 	private versionChooser: PythonChooser;
 	
+	private cursorOffset = 0;
+	
 	public constructor(
 		element: HTMLElement,
 		versionChooser: PythonChooser,
@@ -39,15 +44,50 @@ export class PythonTerminal {
 		this.terminal.open(element);
 		this.terminal.fit();
 		this.terminal.on("key", (key, event) => {
-			if (event.keyCode == 8 /* Backspace */) {
-				if (this.input.length > 0) {
-					this.input = this.input.substring(0, this.input.length - 1);
+			if (event.code === "Backspace") {
+				if (this.cursorOffset >= (-(this.input.length - 1))) {
+					let cursorPos = this.input.length + this.cursorOffset;
+					let left = this.input.substring(0, cursorPos);
+					let right = this.input.substring(cursorPos, this.input.length);
+					
+					this.input = left.substring(0, left.length - 1) + right;
+					this.terminal.write("\b" + right + " ");
+					for (let i=0; i<(right.length + 1); i++) {
+						this.terminal.write("\b");
+					}
 				}
-				this.terminal.write("\b \b");
 			} else {
-				let str = key.replace(/\r/g, '\n\r');
-				this.input += str;
-				this.terminal.write(str);
+				if (event.code === "ArrowLeft") {
+					if (this.cursorOffset >= (-(this.input.length - 1))) {
+						this.cursorOffset -= 1;
+						this.terminal.write(key);
+					}
+				} else if (event.code === "ArrowRight") {
+					if (this.cursorOffset < 0) {
+						this.cursorOffset += 1;
+						this.terminal.write(key);
+					}
+				} else if (event.code === "ArrowUp") {
+					
+				} else if (event.code === "ArrowDown") {
+					
+				} else if (inputChar.test(key)) {
+					let cursorPos = this.input.length + this.cursorOffset;
+					let left = this.input.substring(0, cursorPos);
+					let right = this.input.substring(cursorPos, this.input.length);
+					
+					this.input = left + key + right;
+					this.terminal.write(key);
+					
+					if (this.cursorOffset < 0) {
+						this.terminal.write(right);
+						for (let i=0; i<right.length; i++) {
+							this.terminal.write("\b");
+						}
+					}
+				} else if (newline.test(key)) {
+					this.terminal.write("\n\r");
+				}
 			}
 		});
 		this.terminal.on("linefeed", () => {
@@ -57,6 +97,7 @@ export class PythonTerminal {
 				} else if (this.activeProcess) {
 					this.activeProcess.stdin.write(this.input.trim() + "\n", "utf-8");
 				}
+				this.cursorOffset = 0;
 				this.input = "";
 			}
 		});
