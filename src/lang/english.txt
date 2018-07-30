@@ -1,0 +1,20 @@
+open=Open
+save=Save
+save-as=Save As...
+run=Launch
+step=Step
+stop=Stop
+run-interpreter=Interpreter
+hello-world=Hello World
+file-menu=File
+edit-menu=Edit
+about-menu=About
+about-pyeditor=About PyEditor
+by-author=by fwcd
+connecting=Connecting...
+program-started-via-port=Launched program via port
+debug-instructions=Press "Step" once per line
+step-not-possible=Stepping is currently not possible
+please-save-your-file=Please save your file!
+program-launch=Launch
+

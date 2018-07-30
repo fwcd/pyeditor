@@ -7,40 +7,41 @@ export class MenuBar {
 	private menuTemplate: Electron.MenuItemConstructorOptions[];
 	
 	public constructor(app: AppView) {
+		let lang = app.getLanguage();
 		this.menuTemplate = [
 			{
-				label: "Datei",
+				label: lang.get("file-menu"),
 				submenu: [
 					{
-						label: "Öffnen",
+						label: lang.get("open"),
 						accelerator: "CmdOrCtrl+O",
 						click(): void { app.getEditor().getFileLoader().open(); }
 					},
 					{
-						label: "Speichern",
+						label: lang.get("save"),
 						accelerator: "CmdOrCtrl+S",
 						click(): void { app.getEditor().getFileLoader().save(); }
 					},
 					{
-						label: "Speichern unter",
+						label: lang.get("save-as"),
 						accelerator: "CmdOrCtrl+Shift+S",
 						click(): void { app.getEditor().getFileLoader().saveAs(); }
 					},
 					{ type: "separator" },
 					{
-						label: "Starten",
+						label: lang.get("run"),
 						accelerator: "CmdOrCtrl+R",
 						click(): void { app.getRunner().run(); }
 					},
 					{
-						label: "Interpreter",
+						label: lang.get("run-interpreter"),
 						accelerator: "CmdOrCtrl+Shift+R",
 						click(): void { app.getREPL().run(); }
 					}
 				]
 			},
 			{
-				label: "Bearbeiten",
+				label: lang.get("edit-menu"),
 				submenu: [
 					{role: 'cut'},
 					{role: 'copy'},
@@ -48,11 +49,13 @@ export class MenuBar {
 				]
 			},
 			{
-				label: "Über",
+				label: lang.get("about-menu"),
 				submenu: [
 					{
-						label: "Über PyEditor",
-						click(): void { alert("PyEditor v0.1 \n\n von fwcd"); }
+						label: lang.get("about-pyeditor"),
+						click(): void {
+							alert("PyEditor v" + app.getVersion() + " \n\n " + lang.get("by-author"));
+						}
 					}
 				]
 			}

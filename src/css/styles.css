@@ -61,7 +61,7 @@ button:active {
 	background-color: rgb(29, 29, 29);
 }
 
-#split-drag {
+#split-handle {
 	flex: 0 0 6px;
 	cursor: row-resize;
 }

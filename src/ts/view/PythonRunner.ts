@@ -1,9 +1,11 @@
 import { Editor } from "./Editor";
 import { PythonTerminal } from "./PythonTerminal";
+import { Language } from "../model/Language";
 
 export class PythonRunner {
 	private editor: Editor;
 	private terminal: PythonTerminal;
+	private language: Language;
 	
 	public constructor(
 		buttons: {
@@ -12,10 +14,12 @@ export class PythonRunner {
 			stopButton: HTMLElement
 		},
 		editor: Editor,
-		terminal: PythonTerminal
+		terminal: PythonTerminal,
+		language: Language
 	) {
 		this.editor = editor;
 		this.terminal = terminal;
+		this.language = language;
 		
 		buttons.runButton.addEventListener("click", () => this.run());
 		buttons.stepButton.addEventListener("click", () => this.step());
@@ -43,7 +47,7 @@ export class PythonRunner {
 			}
 			callback(filePath);
 		} else {
-			alert("Bitte speichere deine Datei!");
+			alert(this.language.get("please-save-your-file"));
 		}
 	}
 }

@@ -1,4 +1,3 @@
-import * as path from "path";
 import * as fs from "fs";
 
 export class Language {
@@ -22,14 +21,14 @@ export class Language {
 	}
 }
 
-export function parseLanguageFrom(fileName: string): Language {
+export function parseLanguageFrom(filePath: string): Language {
 	let lang = new Language();
-	let filePath = path.join(__dirname, "..", fileName);
 	fs.readFileSync(filePath, "utf-8")
 		.split("\n")
 		.forEach(line => {
 			let splitted = line.split("=");
 			lang.set(splitted[0], splitted[1])
 		});
+	console.log("Lang: " + lang);
 	return lang;
 }

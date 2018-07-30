@@ -4,8 +4,10 @@ import { ListenerList } from "../utils/listenerList";
 import * as path from "path";
 import { Socket } from "net";
 import chalk from "chalk";
+import { Language } from "../model/Language";
 
 export class PythonDebugSession {
+	private language: Language;
 	private serverPort = new Observable<number>();
 	private pythonCommand: string;
 	private pythonProgramPath: string;
@@ -24,9 +26,14 @@ export class PythonDebugSession {
 	readonly stdoutBufferListeners = new ListenerList<string>();
 	readonly stopListeners = new ListenerList<void>();
 	
-	public constructor(pythonCommand: string, pythonProgramPath: string) {
+	public constructor(
+		pythonCommand: string,
+		pythonProgramPath: string,
+		language: Language
+	) {
 		this.pythonCommand = pythonCommand;
 		this.pythonProgramPath = pythonProgramPath;
+		this.language = language;
 	}
 	
 	public start(): void {
@@ -51,7 +58,7 @@ export class PythonDebugSession {
 		});
 		this.socket.on("error", err => {
 			if (this.attemptConnection && !this.stopped) {
-				this.stdoutListeners.fireWith("Verbinde...");
+				this.stdoutListeners.fireWith(this.language.get("connecting"));
 				window.setTimeout(() => {
 					if (this.attemptConnection && !this.stopped) {
 						this.socket.connect(this.serverPort.get());
@@ -94,8 +101,13 @@ export class PythonDebugSession {
 				let port = JSON.parse(line).port;
 				this.serverPort.set(port);
 				this.proc.stdin.write("{\"type\": \"clientinit\"}\n", "utf-8");
-				this.stdoutListeners.fireWith(chalk.yellow(">> Programm gestartet über Port " + port));
-				this.stdoutListeners.fireWith(chalk.yellow(">> Klick pro Zeile einmal auf \"Schrittweise ausführen\""));
+				this.stdoutListeners.fireWith(chalk.yellow(">> "
+					+ this.language.get("program-started-via-port")
+					+ " " + port
+				));
+				this.stdoutListeners.fireWith(chalk.yellow(">> "
+					+ this.language.get("debug-instructions")
+				));
 				this.initialized = true;
 				return true;
 			}
@@ -111,7 +123,7 @@ export class PythonDebugSession {
 			} else if (msg.type === "finish") {
 				this.stop();
 			} else if (msg.type === "block") {
-				let explanation = "Die Durchführung eines Schritts ist aktuell nicht möglich: " + msg.cause;
+				let explanation = this.language.get("step-not-possible") + ": " + msg.cause;
 				this.notificationListeners.fireWith(explanation);
 			}
 		}

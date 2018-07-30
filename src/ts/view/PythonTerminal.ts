@@ -8,6 +8,7 @@ import { Editor } from "./Editor";
 import { clipboard } from "electron";
 import { ctrlOrCmdPressed } from "../utils/keyUtils";
 import { EventBus } from "../utils/EventBus";
+import { Language } from "../model/Language";
 
 // Apply and declare prototype extension method "fit()"
 Terminal.applyAddon(fit);
@@ -32,6 +33,7 @@ export class PythonTerminal {
 	private debugSession?: PythonDebugSession;
 	private editor: Editor;
 	private versionChooser: VersionChooser;
+	private language: Language;
 	
 	private history: string[] = [];
 	private historyOffset = 0;
@@ -43,8 +45,10 @@ export class PythonTerminal {
 		element: HTMLElement,
 		versionChooser: VersionChooser,
 		editor: Editor,
-		eventBus: EventBus
+		eventBus: EventBus,
+		language: Language
 	) {
+		this.language = language;
 		this.versionChooser = versionChooser;
 		this.editor = editor;
 		this.terminal.open(element);
@@ -175,7 +179,7 @@ export class PythonTerminal {
 			this.debugSession.next();
 		} else {
 			this.stop();
-			this.debugSession = new PythonDebugSession(this.getPythonCommand(), pythonProgramPath);
+			this.debugSession = new PythonDebugSession(this.getPythonCommand(), pythonProgramPath, this.language);
 			this.debugSession.stdoutListeners.add(line => {
 				this.terminal.writeln(line);
 			});
@@ -221,7 +225,10 @@ export class PythonTerminal {
 	public run(pythonProgramPath: string): void {
 		this.launches += 1;
 		this.stop();
-		this.terminal.writeln(chalk.yellow(">> Programmstart Nr. " + this.launches));
+		this.terminal.writeln(chalk.yellow(">> "
+			+ this.language.get("program-launch")
+			+ " #" + this.launches
+		));
 		this.attach(child_process.spawn(
 			this.getPythonCommand(),
 			[pythonProgramPath]

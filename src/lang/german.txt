@@ -1,0 +1,20 @@
+open=Öffnen
+save=Speichern
+save-as=Speichern unter...
+run=Starten
+step=Schrittweise ausführen
+stop=stop
+run-interpreter=Interpreter
+hello-world=Hallo Welt
+file-menu=Datei
+edit-menu=Bearbeiten
+about-menu=Über
+about-pyeditor=Über PyEditor
+by-author=von fwcd
+connecting=Verbinde...
+program-started-via-port=Programm gestartet über Port
+debug-instructions=Klick pro Zeile einmal auf "Schrittweise ausführen"
+step-not-possible=Die Durchführung eines Schritts ist aktuell nicht möglich
+please-save-your-file=Bitte speichere deine Datei!
+program-launch=Programmstart
+

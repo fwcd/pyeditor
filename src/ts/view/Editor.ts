@@ -4,15 +4,18 @@ import { Analyzer } from "../model/Analyzer";
 import { EditorLineHighlighter } from "./editorLineHighlighter";
 import { FileLoader } from "./fileLoader";
 import { EventBus } from "../utils/EventBus";
+import { Language } from "../model/Language";
 
 export class Editor {
-	private eventBus: EventBus;
 	private model: monaco.editor.ITextModel = null;
 	private editor: monaco.editor.IStandaloneCodeEditor;
 	private highlighter: EditorLineHighlighter;
 	private fileLoader: FileLoader;
+	private eventBus: EventBus;
+	private language: Language;
 	
-	public constructor(eventBus: EventBus) {
+	public constructor(language: Language, eventBus: EventBus) {
+		this.language = language;
 		this.eventBus = eventBus;
 	}
 	
@@ -20,7 +23,7 @@ export class Editor {
 		let editorWidget = document.getElementById('editor');
 		this.editor = monaco.editor.create(editorWidget, {
 			value: [
-				"print(\"Hallo Welt\")",
+				"print(\"" + this.language.get("hello-world") + "\")",
 				""
 			].join('\n'),
 			language: 'python',
