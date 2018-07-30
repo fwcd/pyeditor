@@ -1,19 +1,27 @@
 import { ChildProcess, spawn } from "child_process";
 import { Observable } from "./utils/observable";
 import { ListenerList } from "./utils/listenerList";
-import { strTrimLeading } from "./utils/stringUtils";
-
-const pdbLinePattern = /> .+\(([1-9])\)/;
-const finishPattern = /(?:The program finished and will be restarted)|(?:--Return--)/;
+import * as path from "path";
+import { Socket } from "net";
+import chalk from "chalk";
 
 export class PythonDebugSession {
+	private serverPort = new Observable<number>();
 	private pythonCommand: string;
 	private pythonProgramPath: string;
-	private stdoutBuffer: string;
+	
+	private jsonBuffer: string = "";
 	private proc: ChildProcess;
+	private socket: Socket;
+	
 	private stopped = false;
+	private initialized = false;
+	private attemptConnection = true;
+	
 	readonly lineNumber = new Observable<number>(0);
+	readonly notificationListeners = new ListenerList<string>();
 	readonly stdoutListeners = new ListenerList<string>();
+	readonly stdoutBufferListeners = new ListenerList<string>();
 	readonly stopListeners = new ListenerList<void>();
 	
 	public constructor(pythonCommand: string, pythonProgramPath: string) {
@@ -24,52 +32,116 @@ export class PythonDebugSession {
 	public start(): void {
 		this.proc = spawn(
 			this.pythonCommand,
-			["-m", "pdb", this.pythonProgramPath]
+			[
+				"-u",
+				this.jsonDebuggerPath(),
+				"--file", this.pythonProgramPath
+			]
 		);
 		this.proc.stdout.on("data", data => {
-			this.handleRawStdout(this.formatRawStdout(data));
+			this.handleRawStdout(this.formatRaw(data));
+		});
+		this.proc.stderr.on("data", data => {
+			this.handleRawStdout(this.formatRaw(data));
+			this.attemptConnection = false;
+		});
+		this.socket = new Socket();
+		this.serverPort.listen(port => {
+			this.socket.connect(port);
+		});
+		this.socket.on("error", err => {
+			if (this.attemptConnection && !this.stopped) {
+				this.stdoutListeners.fireWith("Verbinde...");
+				window.setTimeout(() => {
+					if (this.attemptConnection && !this.stopped) {
+						this.socket.connect(this.serverPort.get());
+					}
+				}, 500);
+			}
+		});
+		this.socket.on("connect", () => {
+			this.attemptConnection = false;
+		});
+		this.socket.on("data", data => {
+			this.handleRawJson(this.formatRaw(data));
 		});
 	}
 	
+	private jsonDebuggerPath(): string {
+		return path.join(__dirname, "..", "python", "json_debugger.py");
+	}
+	
 	public next(): void {
-		this.proc.stdin.write("next\n", "utf-8");
+		if (!this.stopped) {
+			this.socket.write("{\"type\": \"continue\"}\n", "utf-8");
+		}
+	}
+	
+	private breakAt(lineNumber: number): void {
+		this.lineNumber.set(lineNumber);
 	}
 	
 	public stop(): void {
 		this.stopped = true;
 		this.stopListeners.fire();
 		this.proc.kill();
+		this.socket.destroy();
 	}
 	
-	private handleStdoutLine(line: string): void {
+	private handleStdoutLine(line: string): boolean {
 		if (!this.stopped) {
-			let linePatternMatch = pdbLinePattern.exec(line);
-			if (linePatternMatch && linePatternMatch.length > 1) {
-				this.lineNumber.set(+linePatternMatch[1]);
-			} else if (finishPattern.test(line)) {
+			if (!this.initialized) {
+				let port = JSON.parse(line).port;
+				this.serverPort.set(port);
+				this.proc.stdin.write("{\"type\": \"clientinit\"}\n", "utf-8");
+				this.stdoutListeners.fireWith(chalk.yellow(">> Programm gestartet über Port " + port));
+				this.stdoutListeners.fireWith(chalk.yellow(">> Klick pro Zeile einmal auf \"Schrittweise ausführen\""));
+				this.initialized = true;
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	private handleJsonLine(line: string): void {
+		if (!this.stopped) {
+			let msg = JSON.parse(line);
+			if (msg.type === "break") {
+				this.breakAt(+msg.linenumber);
+			} else if (msg.type === "finish") {
 				this.stop();
-			} else if (line.indexOf("->") !== 0) {
-				this.stdoutListeners.fireWith(strTrimLeading("(Pdb) ", line));
+			} else if (msg.type === "block") {
+				let explanation = "Die Durchführung eines Schritts ist aktuell nicht möglich: " + msg.cause;
+				this.notificationListeners.fireWith(explanation);
 			}
 		}
 	}
 	
-	private formatRawStdout(data: Buffer | string): string {
+	private formatRaw(data: Buffer | string): string {
 		return (typeof data === "string" ? data : data.toString("utf-8")).replace(/[\r\n]+/, "\n");
 	}
 	
 	private handleRawStdout(data: string): void {
 		if (!this.stopped) {
-			let lines = (this.stdoutBuffer + data).split("\n");
-			this.stdoutBuffer = "";
+			let lines = data.split("\n");
 			for (let i=0; i<(lines.length - 1); i++) {
-				this.handleStdoutLine(lines[i]);
+				let line = lines[i];
+				if (!this.handleStdoutLine(line)) {
+					this.stdoutListeners.fireWith(line);
+				}
 			}
-			this.stdoutBuffer += lines[lines.length - 1];
-			if (this.stdoutBuffer.trim() !== "(Pdb)") {
-				this.handleStdoutLine(this.stdoutBuffer);
-				this.stdoutBuffer = "";
+			this.stdoutBufferListeners.fireWith(lines[lines.length - 1]);
+		}
+	}
+	
+	private handleRawJson(data: string): void {
+		if (!this.stopped) {
+			let lines = (this.jsonBuffer + data).split("\n");
+			this.jsonBuffer = "";
+			for (let i=0; i<(lines.length - 1); i++) {
+				this.handleJsonLine(lines[i]);
 			}
+			this.jsonBuffer += lines[lines.length - 1];
 		}
 	}
 	

@@ -1,5 +1,6 @@
 import json
 import sys
+import time
 from argparse import ArgumentParser
 from bdb import Bdb
 from socket import socket, AF_INET, SOCK_STREAM
@@ -11,10 +12,11 @@ def expect(dict_obj, key, value):
         raise ValueError(str(dict_obj) + "[" + str(key) + "] was not " + str(value))
 
 class JsonDebugger(Bdb):
-    def runfile(self, filename, jsonin, jsonout):
+    def runfile(self, filename, jsonin, jsonout, delay_between_lines=None):
         self.jsonin = jsonin
         self.jsonout = jsonout
         self.last_break_line = None
+        self.delay_between_lines = delay_between_lines
         self.mainfilepath = self.canonic(filename)
         self.run("exec(open(%r).read())" % self.mainfilepath)
 
@@ -44,6 +46,8 @@ class JsonDebugger(Bdb):
                 })
                 msg = self.readjson()
                 expect(msg, "type", "continue")
+                if self.delay_between_lines != None:
+                    time.sleep(self.delay_between_lines)
 
     def user_return(self, frame, return_value):
         """This method is called when a return trap is set here."""
@@ -80,7 +84,7 @@ def main():
     (clientsocket, address) = serversocket.accept()
     jsonin = clientsocket.makefile()
     jsonout = clientsocket
-    JsonDebugger().runfile(args.file, jsonin, jsonout)
+    JsonDebugger().runfile(args.file, jsonin, jsonout, delay_between_lines=0.06) # seconds
     jsonout.send((json.dumps({
         "type": "finish"
     }) + "\n").encode())

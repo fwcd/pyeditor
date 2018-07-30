@@ -2,8 +2,6 @@ import chalk from "chalk";
 import * as child_process from "child_process";
 import { Terminal } from "xterm";
 import * as fit from 'xterm/lib/addons/fit/fit';
-import { EditorLineHighlighter } from "./editorLineHighlighter";
-import { Language } from "./language";
 import { PythonChooser } from "./pythonChooser";
 import { EVENT_BUS } from "./renderer";
 import { PythonDebugSession } from "./pythonDebug";
@@ -80,6 +78,12 @@ export class PythonTerminal {
 			this.debugSession.stdoutListeners.add(line => {
 				this.terminal.writeln(line);
 			});
+			this.debugSession.stdoutBufferListeners.add(line => {
+				this.terminal.write(line);
+			});
+			this.debugSession.notificationListeners.add(msg => {
+				alert(msg);
+			})
 			let lineHighlighter = this.editor.getHighlighter();
 			this.debugSession.lineNumber.listen(lineNr => {
 				if (lineNr > 0) {
@@ -111,7 +115,7 @@ export class PythonTerminal {
 	public run(pythonProgramPath: string): void {
 		this.launches += 1;
 		this.stop();
-		this.terminal.writeln(">> Programmstart Nr. " + this.launches);
+		this.terminal.writeln(chalk.yellow(">> Programmstart Nr. " + this.launches));
 		this.attach(child_process.spawn(
 			this.getPythonCommand(),
 			[pythonProgramPath]
