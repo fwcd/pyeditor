@@ -3,12 +3,11 @@ import * as child_process from "child_process";
 import { Terminal } from "xterm";
 import * as fit from 'xterm/lib/addons/fit/fit';
 import { VersionChooser } from "./VersionChooser";
-import { PythonDebugSession } from "../debug/PythonDebugSession";
-import { Editor } from "./Editor";
+import { EVENT_BUS } from "./renderer";
+import { PythonDebugSession } from "./PythonDebugSession";
+import { Editor } from "./editor";
 import { clipboard } from "electron";
-import { ctrlOrCmdPressed } from "../utils/keyUtils";
-import { EventBus } from "../utils/EventBus";
-import { Language } from "../model/Language";
+import { ctrlOrCmdPressed } from "./utils/keyUtils";
 
 // Apply and declare prototype extension method "fit()"
 Terminal.applyAddon(fit);
@@ -33,7 +32,6 @@ export class PythonTerminal {
 	private debugSession?: PythonDebugSession;
 	private editor: Editor;
 	private versionChooser: VersionChooser;
-	private language: Language;
 	
 	private history: string[] = [];
 	private historyOffset = 0;
@@ -44,11 +42,8 @@ export class PythonTerminal {
 	public constructor(
 		element: HTMLElement,
 		versionChooser: VersionChooser,
-		editor: Editor,
-		eventBus: EventBus,
-		language: Language
+		editor: Editor
 	) {
-		this.language = language;
 		this.versionChooser = versionChooser;
 		this.editor = editor;
 		this.terminal.open(element);
@@ -112,7 +107,7 @@ export class PythonTerminal {
 			this.cachedCurrentInput = "";
 			this.input = "";
 		});
-		eventBus.subscribe("postresize", () => this.terminal.fit());
+		EVENT_BUS.subscribe("postresize", () => this.terminal.fit());
 	}
 	
 	private insertAtCursor(delta: string): void {
@@ -178,7 +173,7 @@ export class PythonTerminal {
 			this.debugSession.next();
 		} else {
 			this.stop();
-			this.debugSession = new PythonDebugSession(this.getPythonCommand(), pythonProgramPath, this.language);
+			this.debugSession = new PythonDebugSession(this.getPythonCommand(), pythonProgramPath);
 			this.debugSession.stdoutListeners.add(line => {
 				this.terminal.writeln(line);
 			});
@@ -224,10 +219,7 @@ export class PythonTerminal {
 	public run(pythonProgramPath: string): void {
 		this.launches += 1;
 		this.stop();
-		this.terminal.writeln(chalk.yellow(">> "
-			+ this.language.get("program-launch")
-			+ " #" + this.launches
-		));
+		this.terminal.writeln(chalk.yellow(">> Programmstart Nr. " + this.launches));
 		this.attach(child_process.spawn(
 			this.getPythonCommand(),
 			[pythonProgramPath]

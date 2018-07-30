@@ -29,6 +29,5 @@ export function parseLanguageFrom(filePath: string): Language {
 			let splitted = line.split("=");
 			lang.set(splitted[0], splitted[1])
 		});
-	console.log("Lang: " + lang);
 	return lang;
 }
