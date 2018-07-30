@@ -26,12 +26,15 @@ export class PythonTerminal {
 		}
 	});
 	private activeProcess?: child_process.ChildProcess;
-	private input = "";
 	private launches = 0;
 	private debugSession?: PythonDebugSession;
 	private editor: Editor;
 	private versionChooser: PythonChooser;
 	
+	private history: string[] = [];
+	private historyOffset = 0;
+	private cachedCurrentInput = "";
+	private input = "";
 	private cursorOffset = 0;
 	
 	public constructor(
@@ -58,7 +61,7 @@ export class PythonTerminal {
 				}
 			} else {
 				if (event.code === "ArrowLeft") {
-					if (this.cursorOffset >= (-(this.input.length - 1))) {
+					if (this.cursorOffset > (-this.input.length)) {
 						this.cursorOffset -= 1;
 						this.terminal.write(key);
 					}
@@ -68,9 +71,24 @@ export class PythonTerminal {
 						this.terminal.write(key);
 					}
 				} else if (event.code === "ArrowUp") {
-					
+					if (this.historyOffset === 0) {
+						if (this.history.length > 0) {
+							this.cachedCurrentInput = this.input;
+							this.setAndWriteInput(this.history[this.history.length - 1]);
+							this.historyOffset = -1;
+						}
+					} else if (this.historyOffset > (-this.history.length)) {
+						this.historyOffset -= 1;
+						this.setAndWriteInput(this.history[this.history.length + this.historyOffset]);
+					}
 				} else if (event.code === "ArrowDown") {
-					
+					if (this.historyOffset < (-1)) {
+						this.historyOffset += 1;
+						this.setAndWriteInput(this.history[this.history.length + this.historyOffset]);
+					} else if (this.historyOffset === (-1)) {
+						this.historyOffset = 0;
+						this.setAndWriteInput(this.cachedCurrentInput);
+					}
 				} else if (inputChar.test(key)) {
 					let cursorPos = this.input.length + this.cursorOffset;
 					let left = this.input.substring(0, cursorPos);
@@ -98,10 +116,28 @@ export class PythonTerminal {
 					this.activeProcess.stdin.write(this.input.trim() + "\n", "utf-8");
 				}
 				this.cursorOffset = 0;
+				console.log(this.cursorOffset);
+				this.history.push(this.input);
+				this.historyOffset = 0;
+				this.cachedCurrentInput = "";
 				this.input = "";
 			}
 		});
 		EVENT_BUS.subscribe("postresize", () => this.terminal.fit());
+	}
+	
+	private setAndWriteInput(newInput: string): void {
+		console.log(this.input);
+		while (this.cursorOffset < 0) {
+			this.terminal.write(" ");
+			this.cursorOffset += 1;
+		}
+		for (let i=0; i<this.input.length; i++) {
+			this.terminal.write("\b \b");
+		}
+		this.terminal.write(newInput);
+		this.input = newInput;
+		this.cursorOffset = 0;
 	}
 	
 	public runPythonShell(): void {
@@ -150,6 +186,11 @@ export class PythonTerminal {
 			this.debugSession.stop();
 			this.debugSession = null;
 		}
+		this.history = [];
+		this.historyOffset = 0;
+		this.cursorOffset = 0;
+		this.input = "";
+		this.cachedCurrentInput = "";
 		this.terminal.reset();
 	}
 	
