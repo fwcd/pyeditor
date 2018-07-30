@@ -59,8 +59,6 @@ class JsonDebugger(Bdb):
         but only if we are to stop at or just below this level."""
         pass
 
-# TODO: Use sockets and parse filename from program args
-
 def main():
     parser = ArgumentParser(description="JSON debugger")
     parser.add_argument("--file", help="A path to the file to be debugged")

@@ -1,3 +1,7 @@
+# Source
 node_modules
 src/js
 .DS_Store
+
+# Build
+PyEditor-darwin-x64
