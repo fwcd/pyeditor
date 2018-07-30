@@ -6,6 +6,8 @@ import { PythonChooser } from "./pythonChooser";
 import { EVENT_BUS } from "./renderer";
 import { PythonDebugSession } from "./pythonDebug";
 import { Editor } from "./editor";
+import { clipboard } from "electron";
+import { ctrlOrCmdPressed } from "./utils/keyUtils";
 
 // Apply and declare prototype extension method "fit()"
 Terminal.applyAddon(fit);
@@ -46,6 +48,16 @@ export class PythonTerminal {
 		this.editor = editor;
 		this.terminal.open(element);
 		this.terminal.fit();
+		this.terminal.attachCustomKeyEventHandler(event => {
+			if (ctrlOrCmdPressed(event) && event.key == "v") {
+				let delta = clipboard.readText();
+				this.insertAtCursor(delta);
+				event.preventDefault();
+				return false;
+			} else {
+				return true;
+			}
+		});
 		this.terminal.on("key", (key, event) => {
 			if (event.code === "Backspace") {
 				if (this.cursorOffset >= (-(this.input.length - 1))) {
@@ -71,62 +83,71 @@ export class PythonTerminal {
 						this.terminal.write(key);
 					}
 				} else if (event.code === "ArrowUp") {
-					if (this.historyOffset === 0) {
-						if (this.history.length > 0) {
-							this.cachedCurrentInput = this.input;
-							this.setAndWriteInput(this.history[this.history.length - 1]);
-							this.historyOffset = -1;
-						}
-					} else if (this.historyOffset > (-this.history.length)) {
-						this.historyOffset -= 1;
-						this.setAndWriteInput(this.history[this.history.length + this.historyOffset]);
-					}
+					this.moveHistoryUp();
 				} else if (event.code === "ArrowDown") {
-					if (this.historyOffset < (-1)) {
-						this.historyOffset += 1;
-						this.setAndWriteInput(this.history[this.history.length + this.historyOffset]);
-					} else if (this.historyOffset === (-1)) {
-						this.historyOffset = 0;
-						this.setAndWriteInput(this.cachedCurrentInput);
-					}
+					this.moveHistoryDown();
 				} else if (inputChar.test(key)) {
-					let cursorPos = this.input.length + this.cursorOffset;
-					let left = this.input.substring(0, cursorPos);
-					let right = this.input.substring(cursorPos, this.input.length);
-					
-					this.input = left + key + right;
-					this.terminal.write(key);
-					
-					if (this.cursorOffset < 0) {
-						this.terminal.write(right);
-						for (let i=0; i<right.length; i++) {
-							this.terminal.write("\b");
-						}
-					}
+					this.insertAtCursor(key);
 				} else if (newline.test(key)) {
+					if (this.debugSession) {
+						this.debugSession.input(this.input + "\n");
+					} else if (this.activeProcess) {
+						this.activeProcess.stdin.write(this.input + "\n", "utf-8");
+					}
 					this.terminal.write("\n\r");
 				}
 			}
 		});
 		this.terminal.on("linefeed", () => {
-			if (this.input.length > 0) {
-				if (this.debugSession) {
-					this.debugSession.input(this.input);
-				} else if (this.activeProcess) {
-					this.activeProcess.stdin.write(this.input.trim() + "\n", "utf-8");
-				}
-				this.cursorOffset = 0;
-				console.log(this.cursorOffset);
-				this.history.push(this.input);
-				this.historyOffset = 0;
-				this.cachedCurrentInput = "";
-				this.input = "";
-			}
+			this.cursorOffset = 0;
+			this.history.push(this.input);
+			this.historyOffset = 0;
+			this.cachedCurrentInput = "";
+			this.input = "";
 		});
 		EVENT_BUS.subscribe("postresize", () => this.terminal.fit());
 	}
 	
-	private setAndWriteInput(newInput: string): void {
+	private insertAtCursor(delta: string): void {
+		let cursorPos = this.input.length + this.cursorOffset;
+		let left = this.input.substring(0, cursorPos);
+		let right = this.input.substring(cursorPos, this.input.length);
+		
+		this.input = left + delta + right;
+		this.terminal.write(delta);
+		
+		if (this.cursorOffset < 0) {
+			this.terminal.write(right);
+			for (let i=0; i<right.length; i++) {
+				this.terminal.write("\b");
+			}
+		}
+	}
+	
+	private moveHistoryUp(): void {
+		if (this.historyOffset === 0) {
+			if (this.history.length > 0) {
+				this.cachedCurrentInput = this.input;
+				this.replaceLine(this.history[this.history.length - 1]);
+				this.historyOffset = -1;
+			}
+		} else if (this.historyOffset > (-this.history.length)) {
+			this.historyOffset -= 1;
+			this.replaceLine(this.history[this.history.length + this.historyOffset]);
+		}
+	}
+	
+	private moveHistoryDown(): void {
+		if (this.historyOffset < (-1)) {
+			this.historyOffset += 1;
+			this.replaceLine(this.history[this.history.length + this.historyOffset]);
+		} else if (this.historyOffset === (-1)) {
+			this.historyOffset = 0;
+			this.replaceLine(this.cachedCurrentInput);
+		}
+	}
+	
+	private replaceLine(newInput: string): void {
 		console.log(this.input);
 		while (this.cursorOffset < 0) {
 			this.terminal.write(" ");
