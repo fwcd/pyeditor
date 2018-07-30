@@ -100,7 +100,9 @@ export class PythonTerminal {
 		});
 		this.terminal.on("linefeed", () => {
 			this.cursorOffset = 0;
-			this.history.push(this.input);
+			if (this.input.length > 0) {
+				this.history.push(this.input);
+			}
 			this.historyOffset = 0;
 			this.cachedCurrentInput = "";
 			this.input = "";
