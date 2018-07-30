@@ -14,6 +14,7 @@ class JsonDebugger(Bdb):
     def runfile(self, filename, jsonin, jsonout):
         self.jsonin = jsonin
         self.jsonout = jsonout
+        self.last_break_line = None
         self.mainfilepath = self.canonic(filename)
         self.run("exec(open(%r).read())" % self.mainfilepath)
 
@@ -35,12 +36,14 @@ class JsonDebugger(Bdb):
         is_main_file = (self.canonic(frame.f_code.co_filename) == "<string>")
         if is_main_file:
             line = frame.f_lineno
-            self.writejson({
-                "type": "break",
-                "linenumber": line
-            })
-            msg = self.readjson()
-            expect(msg, "type", "continue")
+            if self.last_break_line != line:
+                self.last_break_line = line
+                self.writejson({
+                    "type": "break",
+                    "linenumber": line
+                })
+                msg = self.readjson()
+                expect(msg, "type", "continue")
 
     def user_return(self, frame, return_value):
         """This method is called when a return trap is set here."""
@@ -78,5 +81,8 @@ def main():
     jsonin = clientsocket.makefile()
     jsonout = clientsocket
     JsonDebugger().runfile(args.file, jsonin, jsonout)
+    jsonout.send((json.dumps({
+        "type": "finish"
+    }) + "\n").encode())
 
 main()
