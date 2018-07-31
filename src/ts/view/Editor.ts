@@ -2,21 +2,21 @@
 
 import { Analyzer } from "../parse/Analyzer";
 import { EditorLineHighlighter } from "./editorLineHighlighter";
-import { FileLoader } from "./fileLoader";
-import { EventBus } from "../utils/EventBus";
+import { FileLoaderView } from "./FileLoaderView";
 import { Language } from "../model/Language";
+import { FileLoaderModel } from "../model/FileLoaderModel";
+import * as fs from "fs";
 
 export class Editor {
 	private model: monaco.editor.ITextModel = null;
 	private editor: monaco.editor.IStandaloneCodeEditor;
 	private highlighter: EditorLineHighlighter;
-	private fileLoader: FileLoader;
-	private eventBus: EventBus;
+	private fileLoader: FileLoaderView;
 	private language: Language;
 	
-	public constructor(language: Language, eventBus: EventBus) {
+	public constructor(language: Language, fileLoaderModel: FileLoaderModel) {
 		this.language = language;
-		this.eventBus = eventBus;
+		this.setupFileLoader(fileLoaderModel);
 	}
 	
 	public initialize(): void {
@@ -36,25 +36,51 @@ export class Editor {
 			wordBasedSuggestions: false,
 			quickSuggestions: false
 		});
+		
 		this.model = this.editor.getModel();
-		let analyzer = new Analyzer(this.model);
-		this.highlighter = new EditorLineHighlighter(this.editor);
-		this.eventBus.subscribe("resize", () => this.editor.layout());
+		this.model.onDidChangeContent(() => this.fileLoader.onChangeFile());
 		this.model.updateOptions({
 			trimAutoWhitespace: false,
 			insertSpaces: true
 		});
-		this.fileLoader = new FileLoader(this.model, this.eventBus);
-		monaco.languages.setLanguageConfiguration('python', {
-			onEnterRules: [
-				{
-					beforeText: /:$/,
-					action: {
-						indentAction: monaco.languages.IndentAction.Indent
+		let analyzer = new Analyzer(this.model);
+		this.highlighter = new EditorLineHighlighter(this.editor);
+		window.addEventListener("resize", () => this.editor.layout());
+		this.setupLanguageConfig();
+		this.setupCompletionProvider(analyzer);
+		this.setupDefinitionProvider(analyzer);
+	}
+	
+	private setupDefinitionProvider(analyzer: Analyzer): void {
+		monaco.languages.registerDefinitionProvider('python', {
+			provideDefinition(model, pos, token): monaco.Promise<monaco.languages.Location | monaco.languages.Location[]> {
+				return new monaco.Promise((resolve, reject) => {
+					analyzer.parseEntire(); // TODO: Incremental parsing
+					let ast = analyzer.getAST();
+					let node = ast.nodeAt(pos.lineNumber);
+					let word = model.getWordAtPosition(pos).word;
+					let declaration = ast.findVariable(word) || ast.findFunction(word);
+					if (declaration) {
+						let location = declaration.position;
+						resolve({
+							range: {
+								startLineNumber: location.lineNumber + 1,
+								endLineNumber: location.lineNumber + 1,
+								startColumn: location.column,
+								endColumn: location.column
+							},
+							uri: model.uri
+						});
 					}
-				}
-			]
+					else {
+						resolve([]);
+					}
+				});
+			}
 		});
+	}
+
+	private setupCompletionProvider(analyzer: Analyzer): void {
 		monaco.languages.registerCompletionItemProvider('python', {
 			provideCompletionItems(model, pos, token): monaco.Promise<monaco.languages.CompletionList> {
 				return new monaco.Promise((resolve, reject) => {
@@ -77,38 +103,43 @@ export class Editor {
 				});
 			}
 		});
-		monaco.languages.registerDefinitionProvider('python', {
-			provideDefinition(model, pos, token): monaco.Promise<monaco.languages.Location | monaco.languages.Location[]> {
-				return new monaco.Promise((resolve, reject) => {
-					analyzer.parseEntire(); // TODO: Incremental parsing
-					let ast = analyzer.getAST();
-					let node = ast.nodeAt(pos.lineNumber);
-					let word = model.getWordAtPosition(pos).word;
-					let declaration = ast.findVariable(word) || ast.findFunction(word);
-					if (declaration) {
-						let location = declaration.position;
-						resolve({
-							range: {
-								startLineNumber: location.lineNumber + 1,
-								endLineNumber: location.lineNumber + 1,
-								startColumn: location.column,
-								endColumn: location.column
-							},
-							uri: model.uri
-						})
-					} else {
-						resolve([]);
-					}
-				});
-			}
-		});
 	}
 	
+	private setupFileLoader(fileLoaderModel: FileLoaderModel): void {
+		this.fileLoader = new FileLoaderView(fileLoaderModel);
+		this.fileLoader.saveListeners.add(filePath => {
+			fs.writeFile(filePath, this.model.getValue(), {
+				encoding: "utf-8"
+			}, err => {
+				if (err) console.log(err);
+			});
+		});
+		this.fileLoader.openListeners.add(filePath => {
+			fs.readFile(filePath, "utf-8", (err, data) => {
+				this.model.setValue(data);
+				this.fileLoader.onLoad(filePath);
+			});
+		});
+	}
+
+	private setupLanguageConfig(): void {
+		monaco.languages.setLanguageConfiguration('python', {
+			onEnterRules: [
+				{
+					beforeText: /:$/,
+					action: {
+						indentAction: monaco.languages.IndentAction.Indent
+					}
+				}
+			]
+		});
+	}
+
 	public getText(): string {
 		return this.model.getValue();
 	}
 	
-	public getFileLoader(): FileLoader {
+	public getFileLoader(): FileLoaderView {
 		return this.fileLoader;
 	}
 	

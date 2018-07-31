@@ -15,7 +15,7 @@ export class MenuBar {
 					{
 						label: lang.get("open"),
 						accelerator: "CmdOrCtrl+O",
-						click(): void { app.getEditor().getFileLoader().open(); }
+						click(): void { app.getEditor().getFileLoader().showOpenDialog(); }
 					},
 					{
 						label: lang.get("save"),
@@ -25,7 +25,7 @@ export class MenuBar {
 					{
 						label: lang.get("save-as"),
 						accelerator: "CmdOrCtrl+Shift+S",
-						click(): void { app.getEditor().getFileLoader().saveAs(); }
+						click(): void { app.getEditor().getFileLoader().showSaveAsDialog(); }
 					},
 					{ type: "separator" },
 					{

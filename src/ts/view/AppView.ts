@@ -1,23 +1,21 @@
-import { EventBus } from "../utils/EventBus";
 import { Editor } from "./Editor";
-import { PythonREPL } from "./PythonREPL";
-import { PythonRunner } from "./PythonRunner";
-import { PythonTerminal } from "./PythonTerminal";
+import { PythonRunner } from "../launch/PythonRunner";
+import { TerminalView } from "./TerminalView";
 import { VersionChooser } from "./VersionChooser";
 import { MenuBar } from "./MenuBar";
 import * as path from "path";
 import { remote } from "electron";
 import { DraggableElement } from "./DraggableElement";
 import { Language } from "../model/Language";
+import { FileLoaderModel } from "../model/FileLoaderModel";
 
 const { Menu } = remote;
 
 export class AppView {
 	private version = "0.1";
 	private language: Language;
-	private eventBus = new EventBus();
 	private versionChooser: VersionChooser;
-	private terminal: PythonTerminal;
+	private terminal: TerminalView;
 	private editor: Editor;
 	private runner: PythonRunner;
 	private repl: PythonREPL;
@@ -35,7 +33,6 @@ export class AppView {
 	}) {
 		this.language = language;
 		
-		this.setupEventBus();
 		this.setupEditor();
 		this.setupSplitPane(elements.splitHandle, elements.terminal);
 		this.setupVersionChooser(elements.versionChooser);
@@ -46,24 +43,22 @@ export class AppView {
 		language.applyToDOM();
 	}
 	
-	private setupEventBus(): void {
-		window.addEventListener("resize", () => this.eventBus.fire("resize"));
-		this.eventBus.subscribe("changefilepath", fileName => {
-			document.title = "PyEditor - " + path.basename(fileName);
-		});
-	}
-	
 	private setupEditor(): void {
-		this.editor = new Editor(this.language, this.eventBus);
+		let fileLoaderModel = new FileLoaderModel();
+		fileLoaderModel.currentPath.listen(filePath => {
+			document.title = "PyEditor - " + path.basename(filePath);
+		});
+		this.editor = new Editor(this.language, fileLoaderModel);
 	}
 	
 	private setupSplitPane(splitHandle: HTMLElement, terminalElement: HTMLElement): void {
 		let splitPane = new DraggableElement(splitHandle);
+		splitPane.onRelease = () => {
+			this.terminal.relayout();
+		}
 		splitPane.onDrag = event => {
-			this.eventBus.fire("resize");
 			terminalElement.style.height = window.innerHeight - event.y + "px";
 		};
-		splitPane.onRelease = event => this.eventBus.fire("postresize");
 	}
 	
 	private setupVersionChooser(element: HTMLElement): void {
@@ -71,11 +66,10 @@ export class AppView {
 	}
 	
 	private setupTerminal(element: HTMLElement): void {
-		this.terminal = new PythonTerminal(
+		this.terminal = new TerminalView(
 			element,
 			this.versionChooser,
 			this.editor,
-			this.eventBus,
 			this.language
 		);
 	}

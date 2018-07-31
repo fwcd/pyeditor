@@ -16,4 +16,8 @@ export class ListenerList<T> {
 	public remove(listener: (value: T) => void): void {
 		this.listeners.splice(this.listeners.indexOf(listener), 1);
 	}
+	
+	public count(): number {
+		return this.listeners.length;
+	}
 }

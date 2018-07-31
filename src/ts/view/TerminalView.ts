@@ -3,12 +3,13 @@ import * as child_process from "child_process";
 import { Terminal } from "xterm";
 import * as fit from 'xterm/lib/addons/fit/fit';
 import { VersionChooser } from "./VersionChooser";
-import { PythonDebugSession } from "../debug/PythonDebugSession";
+import { PythonDebugSession } from "../launch/PythonDebugSession";
 import { Editor } from "./Editor";
 import { clipboard } from "electron";
 import { ctrlOrCmdPressed } from "../utils/keyUtils";
-import { EventBus } from "../utils/EventBus";
 import { Language } from "../model/Language";
+import { TerminalModel } from "../model/TerminalModel";
+import { TerminalProcess } from "../model/TerminalProcess";
 
 // Apply and declare prototype extension method "fit()"
 Terminal.applyAddon(fit);
@@ -22,15 +23,12 @@ declare module "xterm" {
 	}
 }
 
-export class PythonTerminal {
-	private terminal = new Terminal({
+export class TerminalView {
+	private xterm = new Terminal({
 		theme: {
 			background: "rgb(29, 29, 29)"
 		}
 	});
-	private activeProcess?: child_process.ChildProcess;
-	private launches = 0;
-	private debugSession?: PythonDebugSession;
 	private editor: Editor;
 	private versionChooser: VersionChooser;
 	private language: Language;
@@ -41,19 +39,20 @@ export class PythonTerminal {
 	private input = "";
 	private cursorOffset = 0;
 	
+	private model: TerminalModel;
+	
 	public constructor(
 		element: HTMLElement,
 		versionChooser: VersionChooser,
 		editor: Editor,
-		eventBus: EventBus,
 		language: Language
 	) {
 		this.language = language;
 		this.versionChooser = versionChooser;
 		this.editor = editor;
-		this.terminal.open(element);
-		this.terminal.fit();
-		this.terminal.attachCustomKeyEventHandler(event => {
+		this.xterm.open(element);
+		this.xterm.fit();
+		this.xterm.attachCustomKeyEventHandler(event => {
 			if (ctrlOrCmdPressed(event) && event.key == "v") {
 				let delta = clipboard.readText();
 				this.insertAtCursor(delta);
@@ -63,7 +62,7 @@ export class PythonTerminal {
 				return true;
 			}
 		});
-		this.terminal.on("key", (key, event) => {
+		this.xterm.on("key", (key, event) => {
 			if (event.code === "Backspace") {
 				if (this.cursorOffset >= (-(this.input.length - 1))) {
 					let cursorPos = this.input.length + this.cursorOffset;
@@ -71,21 +70,21 @@ export class PythonTerminal {
 					let right = this.input.substring(cursorPos, this.input.length);
 					
 					this.input = left.substring(0, left.length - 1) + right;
-					this.terminal.write("\b" + right + " ");
+					this.xterm.write("\b" + right + " ");
 					for (let i=0; i<(right.length + 1); i++) {
-						this.terminal.write("\b");
+						this.xterm.write("\b");
 					}
 				}
 			} else {
 				if (event.code === "ArrowLeft") {
 					if (this.cursorOffset > (-this.input.length)) {
 						this.cursorOffset -= 1;
-						this.terminal.write(key);
+						this.xterm.write(key);
 					}
 				} else if (event.code === "ArrowRight") {
 					if (this.cursorOffset < 0) {
 						this.cursorOffset += 1;
-						this.terminal.write(key);
+						this.xterm.write(key);
 					}
 				} else if (event.code === "ArrowUp") {
 					this.moveHistoryUp();
@@ -94,16 +93,14 @@ export class PythonTerminal {
 				} else if (inputChar.test(key)) {
 					this.insertAtCursor(key);
 				} else if (newline.test(key)) {
-					if (this.debugSession) {
-						this.debugSession.input(this.input + "\n");
-					} else if (this.activeProcess) {
-						this.activeProcess.stdin.write(this.input + "\n", "utf-8");
+					if (this.model.process.isPresent()) {
+						this.model.process.get().inputLine(this.input);
 					}
-					this.terminal.write("\n\r");
+					this.xterm.write("\n\r");
 				}
 			}
 		});
-		this.terminal.on("linefeed", () => {
+		this.xterm.on("linefeed", () => {
 			this.cursorOffset = 0;
 			if (this.input.length > 0) {
 				this.history.push(this.input);
@@ -112,7 +109,18 @@ export class PythonTerminal {
 			this.cachedCurrentInput = "";
 			this.input = "";
 		});
-		eventBus.subscribe("postresize", () => this.terminal.fit());
+		this.model.process.listen(process => {
+			if (process) {
+				this.attach(process);
+				this.focus();
+			} else {
+				this.clear();
+			}
+		});
+	}
+	
+	public relayout(): void {
+		this.xterm.fit();
 	}
 	
 	private insertAtCursor(delta: string): void {
@@ -121,12 +129,12 @@ export class PythonTerminal {
 		let right = this.input.substring(cursorPos, this.input.length);
 		
 		this.input = left + delta + right;
-		this.terminal.write(delta);
+		this.xterm.write(delta);
 		
 		if (this.cursorOffset < 0) {
-			this.terminal.write(right);
+			this.xterm.write(right);
 			for (let i=0; i<right.length; i++) {
-				this.terminal.write("\b");
+				this.xterm.write("\b");
 			}
 		}
 	}
@@ -156,120 +164,54 @@ export class PythonTerminal {
 	
 	private replaceLine(newInput: string): void {
 		while (this.cursorOffset < 0) {
-			this.terminal.write(" ");
+			this.xterm.write(" ");
 			this.cursorOffset += 1;
 		}
 		for (let i=0; i<this.input.length; i++) {
-			this.terminal.write("\b \b");
+			this.xterm.write("\b \b");
 		}
-		this.terminal.write(newInput);
+		this.xterm.write(newInput);
 		this.input = newInput;
 		this.cursorOffset = 0;
 	}
 	
-	public runPythonShell(): void {
-		this.stop();
-		this.attach(child_process.spawn(this.getPythonCommand(), ["-i", "-u"]));
-		this.focus();
-	}
-	
-	public step(pythonProgramPath: string): void {
-		if (this.debugSession) {
-			this.debugSession.next();
-		} else {
-			this.stop();
-			this.debugSession = new PythonDebugSession(this.getPythonCommand(), pythonProgramPath, this.language);
-			this.debugSession.stdoutListeners.add(line => {
-				this.terminal.writeln(line);
-			});
-			this.debugSession.stdoutBufferListeners.add(line => {
-				this.terminal.write(line);
-			});
-			this.debugSession.notificationListeners.add(msg => {
-				alert(msg);
-			})
-			let lineHighlighter = this.editor.getHighlighter();
-			this.debugSession.lineNumber.listen(lineNr => {
-				if (lineNr > 0) {
-					lineHighlighter.highlight(lineNr);
-				} else {
-					lineHighlighter.removeHighlightings();
-				}
-			});
-			this.debugSession.stopListeners.add(() => {
-				lineHighlighter.removeHighlightings();
-				this.debugSession = null;
-			});
-			this.debugSession.start();
-		}
-	}
-	
-	public stop(): void {
-		if (this.activeProcess) {
-			this.activeProcess.kill();
-			this.removeActiveProcess();
-		}
-		if (this.debugSession) {
-			this.debugSession.stop();
-			this.debugSession = null;
-		}
+	private clear(): void {
 		this.history = [];
 		this.historyOffset = 0;
 		this.cursorOffset = 0;
 		this.input = "";
 		this.cachedCurrentInput = "";
-		this.terminal.reset();
-	}
-	
-	public run(pythonProgramPath: string): void {
-		this.launches += 1;
-		this.stop();
-		this.terminal.writeln(chalk.yellow(">> "
-			+ this.language.get("program-launch")
-			+ " #" + this.launches
-		));
-		this.attach(child_process.spawn(
-			this.getPythonCommand(),
-			[pythonProgramPath]
-		));
-		this.focus();
+		this.xterm.reset();
 	}
 	
 	private focus(): void {
-		this.terminal.focus();
+		this.xterm.focus();
 	}
 	
-	private getPythonCommand(): string {
-		return this.versionChooser.getSelectedVersion() || "python3";
-	}
-	
-	private attach(process: child_process.ChildProcess): void {
-		this.activeProcess = process;
-		this.activeProcess.stdout.on("data", data => {
-			this.write(this.format(data));
+	private attach(process: TerminalProcess): void {
+		process.outputLineListeners.add(line => {
+			this.write(line + "\n");
 		});
-		this.activeProcess.stderr.on("data", data => {
-			this.write(chalk.redBright(this.format(data)));
+		process.outputErrorLineListeners.add(line => {
+			this.write(chalk.redBright(line) + "\n");
 		});
-		this.activeProcess.on("exit", () => {
+		process.exitListeners.add(() => {
 			this.removeActiveProcess();
 		});
 	}
 	
 	private removeActiveProcess(): void {
-		this.activeProcess = null;
-		this.debugSession = null;
-	}
-	
-	private format(data: Buffer | string): string {
-		return (typeof data === "string" ? data : data.toString("utf-8")).replace(/[\r\n]+/, "\n");
+		if (this.model.process.isPresent()) {
+			this.model.process.get().kill();
+		}
+		this.model.process.set(null);
 	}
 	
 	private write(data: string): void {
 		let lines = data.split("\n");
 		for (let i=0; i<(lines.length - 1); i++) {
-			this.terminal.writeln(lines[i]);
+			this.xterm.writeln(lines[i]);
 		}
-		this.terminal.write(lines[lines.length - 1]);
+		this.xterm.write(lines[lines.length - 1]);
 	}
 }

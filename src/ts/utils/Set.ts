@@ -1,4 +1,4 @@
-import { arrayContains } from "./arrayUtils";
+import { arrayContains } from "./ArrayUtils";
 
 /** An unordered collection of unique items. */
 export interface Set<T> {
