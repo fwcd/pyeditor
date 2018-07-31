@@ -45,6 +45,12 @@ export class Observable<T> {
 		}
 	}
 	
+	public derive<R>(mapper: (value: T) => R): Observable<R> {
+		let result = new Observable<R>();
+		this.listen(value => result.set(mapper(value)));
+		return result;
+	}
+	
 	public isPresent(): boolean {
 		if (this.value) {
 			return true;

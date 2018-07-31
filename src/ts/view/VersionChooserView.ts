@@ -1,12 +1,15 @@
 import { clearChilds } from "../utils/domUtils";
+import { VersionChooserModel } from "../model/VersionChooserModel";
 
 let commandExists = require("command-exists");
 
-export class VersionChooser {
+export class VersionChooserView {
+	private model: VersionChooserModel;
 	private element: HTMLSelectElement;
 	private versions: string[] = [];
 	
-	public constructor(element: HTMLSelectElement) {
+	public constructor(model: VersionChooserModel, element: HTMLSelectElement) {
+		this.model = model;
 		this.element = element;
 		clearChilds(element);
 		this.addExisitingVersions(
@@ -16,6 +19,9 @@ export class VersionChooser {
 			"python3.7",
 			"python3"
 		);
+		this.element.addEventListener("change", () => {
+			this.model.pythonVersion.set(this.getSelectedVersionFromUI());
+		});
 	}
 	
 	private addExisitingVersions(...pythonCommands: string[]): void {
@@ -42,7 +48,7 @@ export class VersionChooser {
 		});
 	}
 	
-	public getSelectedVersion(): string {
+	private getSelectedVersionFromUI(): string {
 		return this.versions[this.element.selectedIndex];
 	}
 }

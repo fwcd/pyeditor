@@ -1,23 +1,42 @@
-import { Editor } from "../view/Editor";
-import { TerminalView } from "../view/TerminalView";
-import { Language } from "../model/Language";
-import { VersionChooser } from "../view/VersionChooser";
-import { PythonDebugSession } from "../PythonDebugSession";
-import { TerminalModel } from "../model/TerminalModel";
-import { VersionChooserModel } from "../model/VersionChooserModel";
-import { version } from "punycode";
+import chalk from "chalk";
 import { ChildProcess, spawn } from "child_process";
-import { DataProcess } from "../model/TerminalProcess";
+import { Language } from "../model/Language";
+import { TerminalModel } from "../model/TerminalModel";
+import { DataProcess, TerminalProcess } from "../model/TerminalProcess";
+import { VersionChooserModel } from "../model/VersionChooserModel";
+import { PythonDebugSession } from "./PythonDebugSession";
+import { ListenerList } from "../utils/listenerList";
+import { Observable } from "../utils/observable";
+import { FileLoaderModel } from "../model/FileLoaderModel";
 
 export class PythonRunner {
 	private terminal: TerminalModel;
 	private versionChooser: VersionChooserModel;
+	private fileLoader: FileLoaderModel;
 	private debugSession?: PythonDebugSession;
+	private startingDebugSession = false;
+	private language: Language;
 	private launches = 0;
 	
-	public constructor(model: TerminalModel, versionChooser: VersionChooserModel) {
+	readonly highlightedLineNumber = new Observable<number>(0);
+	readonly notificationListeners = new ListenerList<string>();
+	
+	public constructor(
+		model: TerminalModel,
+		versionChooser: VersionChooserModel,
+		fileLoader: FileLoaderModel,
+		language: Language
+	) {
 		this.terminal = model;
 		this.versionChooser = versionChooser;
+		this.fileLoader = fileLoader;
+		this.language = language;
+		
+		this.terminal.process.preSetHandlers.push(() => {
+			if (this.debugSession && !this.startingDebugSession) {
+				this.debugSession.stop();
+			}
+		});
 	}
 	
 	private getPythonCommand(): string {
@@ -25,76 +44,84 @@ export class PythonRunner {
 	}
 	
 	public runPythonShell(): void {
-		this.stop();
-		this.attach(spawn(this.getPythonCommand(), ["-i", "-u"]));
+		this.kill();
+		this.attach(DataProcess.fromChildProcess(spawn(this.getPythonCommand(), ["-i", "-u"])));
 	}
 	
-	private attach(process: ChildProcess): void {
-		this.terminal.process.set(DataProcess.fromChildProcess(process));
+	private attach(process: TerminalProcess): void {
+		this.terminal.process.set(process);
 	}
 	
-	public step(pythonProgramPath: string): void {
+	public step(): void {
 		if (this.debugSession) {
 			this.debugSession.next();
 		} else {
-			this.stop();
-			this.debugSession = new PythonDebugSession(this.getPythonCommand(), pythonProgramPath, this.language);
-			this.debugSession.stdoutListeners.add(line => {
-				this.xterm.writeln(line);
-			});
-			this.debugSession.stdoutBufferListeners.add(line => {
-				this.xterm.write(line);
-			});
-			this.debugSession.notificationListeners.add(msg => {
-				alert(msg);
-			})
-			let lineHighlighter = this.editor.getHighlighter();
-			this.debugSession.lineNumber.listen(lineNr => {
-				if (lineNr > 0) {
-					lineHighlighter.highlight(lineNr);
-				} else {
-					lineHighlighter.removeHighlightings();
-				}
-			});
-			this.debugSession.stopListeners.add(() => {
-				lineHighlighter.removeHighlightings();
-				this.debugSession = null;
-			});
-			this.debugSession.start();
+			let filePath = this.getFilePath();
+			if (filePath) {
+				this.kill();
+				this.saveFile();
+				this.startingDebugSession = true;
+				this.debugSession = new PythonDebugSession(
+					this.getPythonCommand(),
+					this.getFilePath(),
+					this.language
+				);
+				this.debugSession.notificationListeners.add(msg => {
+					this.notificationListeners.fireWith(msg);
+				})
+				this.debugSession.lineNumber.listen(lineNr => {
+					this.highlightedLineNumber.set(lineNr);
+				});
+				this.debugSession.exitListeners.add(() => {
+					this.highlightedLineNumber.set(0);
+					this.debugSession = null;
+				});
+				this.attach(this.debugSession);
+				this.debugSession.start();
+				this.startingDebugSession = false;
+			}
 		}
 	}
 	
-	public run(pythonProgramPath: string): void {
-		this.launches += 1;
-		this.stop();
-		this.xterm.writeln(chalk.yellow(">> "
-			+ this.language.get("program-launch")
-			+ " #" + this.launches
-		));
-		this.attach(child_process.spawn(
-			this.getPythonCommand(),
-			[pythonProgramPath]
-		));
-		this.focus();
+	public run(): void {
+		let filePath = this.getFilePath();
+		if (filePath) {
+			this.launches += 1;
+			this.kill();
+			this.saveFile();
+			this.terminal.println(chalk.yellow(">> "
+				+ this.language.get("program-launch")
+				+ " #" + this.launches
+			));
+			this.attach(DataProcess.fromChildProcess(spawn(
+				this.getPythonCommand(),
+				[this.getFilePath()]
+			)));
+		}
+	}
+	
+	private kill(): void {
+		if (this.terminal.process.isPresent()) {
+			this.terminal.process.get().kill();
+		}
 	}
 	
 	public stop(): void {
-		if (this.terminal.process.isPresent()) {
-			this.terminal.process.get().kill();
-			this.terminal.process.set(null);
-		}
+		this.kill();
+		this.terminal.process.set(null);
 	}
 	
-	private withCurrentFile(callback: (filePath: string) => void): void {
-		let fl = this.editor.getFileLoader();
-		let filePath = fl.getCurrentFilePath();
-		if (filePath) {
-			if (fl.isUnsaved()) {
-				fl.save();
-			}
-			callback(filePath);
+	private saveFile(): void {
+		this.fileLoader.saveRequestListeners.fire();
+	}
+	
+	private getFilePath(): string {
+		let filePath = this.fileLoader.currentPath;
+		if (filePath.isPresent()) {
+			return filePath.get();
 		} else {
-			alert(this.language.get("please-save-your-file"));
+			this.notificationListeners.fireWith(this.language.get("please-save-your-file"));
+			return null;
 		}
 	}
 }

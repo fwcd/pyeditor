@@ -1,7 +1,8 @@
 import { AppView } from "./view/AppView";
-import { parseLanguageFrom, Language } from "./model/Language";
+import { Language } from "./model/Language";
 import * as path from "path";
 import { remote } from "electron";
+import { parseLanguageFrom } from "./parse/LangFileParser";
 
 const { app } = remote;
 

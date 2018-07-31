@@ -5,8 +5,9 @@ import * as path from "path";
 import { Socket } from "net";
 import chalk from "chalk";
 import { Language } from "../model/Language";
+import { TerminalProcess } from "../model/TerminalProcess";
 
-export class PythonDebugSession {
+export class PythonDebugSession implements TerminalProcess {
 	private language: Language;
 	private serverPort = new Observable<number>();
 	private pythonCommand: string;
@@ -22,9 +23,10 @@ export class PythonDebugSession {
 	
 	readonly lineNumber = new Observable<number>(0);
 	readonly notificationListeners = new ListenerList<string>();
-	readonly stdoutListeners = new ListenerList<string>();
-	readonly stdoutBufferListeners = new ListenerList<string>();
-	readonly stopListeners = new ListenerList<void>();
+	readonly outputLineListeners = new ListenerList<string>();
+	readonly outputErrorLineListeners = new ListenerList<string>();
+	readonly outputPartialLineListeners = new ListenerList<string>();
+	readonly exitListeners = new ListenerList<void>();
 	
 	public constructor(
 		pythonCommand: string,
@@ -46,10 +48,10 @@ export class PythonDebugSession {
 			]
 		);
 		this.proc.stdout.on("data", data => {
-			this.handleRawStdout(this.formatRaw(data));
+			this.handleRawStdout(this.formatRaw(data), false);
 		});
 		this.proc.stderr.on("data", data => {
-			this.handleRawStdout(this.formatRaw(data));
+			this.handleRawStdout(this.formatRaw(data), true);
 			this.attemptConnection = false;
 		});
 		this.socket = new Socket();
@@ -58,7 +60,7 @@ export class PythonDebugSession {
 		});
 		this.socket.on("error", err => {
 			if (this.attemptConnection && !this.stopped) {
-				this.stdoutListeners.fireWith(this.language.get("connecting"));
+				this.outputLineListeners.fireWith(this.language.get("connecting"));
 				window.setTimeout(() => {
 					if (this.attemptConnection && !this.stopped) {
 						this.socket.connect(this.serverPort.get());
@@ -72,6 +74,7 @@ export class PythonDebugSession {
 		this.socket.on("data", data => {
 			this.handleRawJson(this.formatRaw(data));
 		});
+		this.socket.on("close", () => this.stop());
 	}
 	
 	private jsonDebuggerPath(): string {
@@ -89,10 +92,12 @@ export class PythonDebugSession {
 	}
 	
 	public stop(): void {
-		this.stopped = true;
-		this.stopListeners.fire();
-		this.proc.kill();
-		this.socket.destroy();
+		if (!this.stopped) {
+			this.stopped = true;
+			this.exitListeners.fire();
+			if (this.proc) this.proc.kill();
+			if (this.socket) this.socket.destroy();
+		}
 	}
 	
 	private handleStdoutLine(line: string): boolean {
@@ -101,11 +106,11 @@ export class PythonDebugSession {
 				let port = JSON.parse(line).port;
 				this.serverPort.set(port);
 				this.proc.stdin.write("{\"type\": \"clientinit\"}\n", "utf-8");
-				this.stdoutListeners.fireWith(chalk.yellow(">> "
+				this.outputLineListeners.fireWith(chalk.yellow(">> "
 					+ this.language.get("program-started-via-port")
 					+ " " + port
 				));
-				this.stdoutListeners.fireWith(chalk.yellow(">> "
+				this.outputLineListeners.fireWith(chalk.yellow(">> "
 					+ this.language.get("debug-instructions")
 				));
 				this.initialized = true;
@@ -133,16 +138,20 @@ export class PythonDebugSession {
 		return (typeof data === "string" ? data : data.toString("utf-8")).replace(/[\r\n]+/, "\n");
 	}
 	
-	private handleRawStdout(data: string): void {
+	private handleRawStdout(data: string, isError: boolean): void {
 		if (!this.stopped) {
 			let lines = data.split("\n");
 			for (let i=0; i<(lines.length - 1); i++) {
 				let line = lines[i];
 				if (!this.handleStdoutLine(line)) {
-					this.stdoutListeners.fireWith(line);
+					if (isError) {
+						this.outputErrorLineListeners.fireWith(line);
+					} else {
+						this.outputLineListeners.fireWith(line);
+					}
 				}
 			}
-			this.stdoutBufferListeners.fireWith(lines[lines.length - 1]);
+			this.outputPartialLineListeners.fireWith(lines[lines.length - 1]);
 		}
 	}
 	
@@ -157,9 +166,11 @@ export class PythonDebugSession {
 		}
 	}
 	
-	public input(str: string): void {
+	public inputLine(line: string): void {
 		if (!this.stopped) {
-			this.proc.stdin.write(str, "utf-8");
+			this.proc.stdin.write(line + "\n", "utf-8");
 		}
 	}
+	
+	public kill(): void { this.stop(); }
 }

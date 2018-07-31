@@ -56,7 +56,7 @@ export class DataProcess implements TerminalProcess {
 	}
 	
 	public static fromChildProcess(childProcess: ChildProcess): DataProcess {
-		let inputLine = (line: string) => childProcess.stdin.write(line, "utf-8");
+		let inputLine = (line: string) => childProcess.stdin.write(line + "\n", "utf-8");
 		let kill = () => childProcess.kill();
 		let dataOutputListeners = new ListenerList<Buffer | string>();
 		let errorOutputListeners = new ListenerList<Buffer | string>();
@@ -68,7 +68,7 @@ export class DataProcess implements TerminalProcess {
 	}
 	
 	public static fromSocket(socket: Socket): DataProcess {
-		let inputLine = (line: string) => socket.write(line, "utf-8");
+		let inputLine = (line: string) => socket.write(line + "\n", "utf-8");
 		let kill = () => socket.destroy();
 		let dataOutputListeners = new ListenerList<Buffer | string>();
 		let exitListeners = new ListenerList<void>();

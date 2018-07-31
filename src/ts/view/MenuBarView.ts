@@ -3,7 +3,7 @@ import { remote } from "electron";
 
 const { Menu } = remote;
 
-export class MenuBar {
+export class MenuBarView {
 	private menuTemplate: Electron.MenuItemConstructorOptions[];
 	
 	public constructor(app: AppView) {
@@ -36,7 +36,7 @@ export class MenuBar {
 					{
 						label: lang.get("run-interpreter"),
 						accelerator: "CmdOrCtrl+Shift+R",
-						click(): void { app.getREPL().run(); }
+						click(): void { app.getRunner().runPythonShell(); }
 					}
 				]
 			},

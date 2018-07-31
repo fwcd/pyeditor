@@ -7,7 +7,7 @@ import { Language } from "../model/Language";
 import { FileLoaderModel } from "../model/FileLoaderModel";
 import * as fs from "fs";
 
-export class Editor {
+export class EditorView {
 	private model: monaco.editor.ITextModel = null;
 	private editor: monaco.editor.IStandaloneCodeEditor;
 	private highlighter: EditorLineHighlighter;
@@ -45,10 +45,13 @@ export class Editor {
 		});
 		let analyzer = new Analyzer(this.model);
 		this.highlighter = new EditorLineHighlighter(this.editor);
-		window.addEventListener("resize", () => this.editor.layout());
 		this.setupLanguageConfig();
 		this.setupCompletionProvider(analyzer);
 		this.setupDefinitionProvider(analyzer);
+	}
+	
+	public relayout(): void {
+		this.editor.layout();
 	}
 	
 	private setupDefinitionProvider(analyzer: Analyzer): void {
