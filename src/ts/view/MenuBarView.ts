@@ -13,6 +13,11 @@ export class MenuBarView {
 				label: lang.get("file-menu"),
 				submenu: [
 					{
+						label: lang.get("new"),
+						accelerator: "CmdOrCtrl+N",
+						click(): void { app.getEditor().getFileLoader().newFile(); }
+					},
+					{
 						label: lang.get("open"),
 						accelerator: "CmdOrCtrl+O",
 						click(): void { app.getEditor().getFileLoader().showOpenDialog(); }

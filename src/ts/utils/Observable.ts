@@ -15,10 +15,10 @@ export class Observable<T> {
 	
 	public set(newValue: T): void {
 		let oldValue = this.value;
-		this.preSetHandlers.forEach(handler => {
-			handler(oldValue, newValue);
-		});
 		if (!oldValue || (newValue !== oldValue)) {
+			this.preSetHandlers.forEach(handler => {
+				handler(oldValue, newValue);
+			});
 			this.value = newValue;
 			this.fire();
 		}

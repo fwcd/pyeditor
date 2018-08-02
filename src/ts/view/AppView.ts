@@ -42,10 +42,14 @@ export class AppView {
 	}
 	
 	private setupEditor(): void {
-		this.model.fileLoader.currentPath.listen(filePath => {
-			document.title = "PyEditor - " + path.basename(filePath);
-		});
 		this.editor = new EditorView(this.model.language, this.model.fileLoader);
+		this.model.fileLoader.currentPath.listen(filePath => {
+			if (filePath) {
+				document.title = "PyEditor - " + path.basename(filePath);
+			} else {
+				document.title = "PyEditor";
+			}
+		});
 		window.addEventListener("resize", () => this.editor.relayout());
 	}
 	

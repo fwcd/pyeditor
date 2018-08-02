@@ -43,6 +43,7 @@ export class EditorView {
 			trimAutoWhitespace: false,
 			insertSpaces: true
 		});
+		this.fileLoader.clearListeners.add(() => this.model.setValue(""));
 		let analyzer = new Analyzer(this.model);
 		this.highlighter = new EditorLineHighlighter(this.editor);
 		this.setupLanguageConfig();
@@ -109,7 +110,7 @@ export class EditorView {
 	}
 	
 	private setupFileLoader(fileLoaderModel: FileLoaderModel): void {
-		this.fileLoader = new FileLoaderView(fileLoaderModel);
+		this.fileLoader = new FileLoaderView(fileLoaderModel, this.language);
 		this.fileLoader.saveListeners.add(filePath => {
 			fs.writeFile(filePath, this.model.getValue(), {
 				encoding: "utf-8"

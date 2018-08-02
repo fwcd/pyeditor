@@ -1,3 +1,4 @@
+new=Neu
 open=Öffnen
 save=Speichern
 save-as=Speichern unter...
@@ -13,8 +14,8 @@ about-pyeditor=Über PyEditor
 by-author=von fwcd
 connecting=Verbinde...
 program-started-via-port=Programm gestartet über Port
-debug-instructions=Klick pro Zeile einmal auf "Schrittweise ausführen"
+debug-instructions=Klicke pro Zeile einmal auf "Schrittweise ausführen"
 step-not-possible=Die Durchführung eines Schritts ist aktuell nicht möglich
 please-save-your-file=Bitte speichere deine Datei!
 program-launch=Programmstart
-
+confirm-overwrite-unsaved=Dies wird deinen ungespeicherten Code überschreiben. Bist du dir sicher?
