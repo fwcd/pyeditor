@@ -4,4 +4,5 @@ src/js
 .DS_Store
 
 # Build
+build
 PyEditor-darwin-x64
