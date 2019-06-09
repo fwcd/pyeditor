@@ -25,6 +25,6 @@
 		"command-exists": "^1.2.7",
 		"fix-path": "^2.1.0",
 		"monaco-editor": "^0.17.0",
-		"xterm": "^3.5.1"
+		"xterm": "^3.14.2"
 	}
 }
