@@ -7,7 +7,9 @@ export function parseLanguageFrom(filePath: string): Language {
 		.split("\n")
 		.forEach(line => {
 			let splitted = line.split("=");
-			lang.set(splitted[0], splitted[1])
+			if (splitted.length == 2) {
+				lang.set(splitted[0].trim(), splitted[1].trim());
+			}
 		});
 	return lang;
 }

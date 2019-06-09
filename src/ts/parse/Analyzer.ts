@@ -109,7 +109,11 @@ export class Analyzer {
 	}
 	
 	private detectIndentationLevel(line: string): number {
-		let indent = this.model.getOneIndent();
+		const options = this.model.getOptions();
+		const indent: string = options.insertSpaces
+			? " ".repeat(options.indentSize)
+			: "\t".repeat(options.indentSize / options.tabSize);
+		
 		let i = 0;
 		let level = 0;
 		while (i < line.length && this.matchesStr(indent, i, line)) {

@@ -12,7 +12,10 @@ function createWindow(): void {
 	// Create the browser window.
 	mainWindow = new BrowserWindow({
 		width: 600,
-		height: 750
+		height: 750,
+		webPreferences: {
+			nodeIntegration: true
+		}
 	});
 
 	// and load the index.html of the app.

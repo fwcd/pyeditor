@@ -10,7 +10,8 @@ function readLanguage(langFileName: string): Language {
 	try {
 		return parseLanguageFrom(path.join(__dirname, "..", "lang", langFileName));
 	} catch (err) {
-		alert("Could not read language file: " + langFileName);
+		alert(`Could not read language file ${langFileName}: ${err}`);
+		console.log(err)
 		app.quit();
 	}
 }

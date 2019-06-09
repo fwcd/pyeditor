@@ -52,59 +52,56 @@ export class EditorView {
 	}
 	
 	public relayout(): void {
-		this.editor.layout();
+		if (this.editor) {
+			this.editor.layout();
+		}
 	}
 	
 	private setupDefinitionProvider(analyzer: Analyzer): void {
 		monaco.languages.registerDefinitionProvider('python', {
-			provideDefinition(model, pos, token): monaco.Promise<monaco.languages.Location | monaco.languages.Location[]> {
-				return new monaco.Promise((resolve, reject) => {
-					analyzer.parseEntire(); // TODO: Incremental parsing
-					let ast = analyzer.getAST();
-					let node = ast.nodeAt(pos.lineNumber);
-					let word = model.getWordAtPosition(pos).word;
-					let declaration = ast.findVariable(word) || ast.findFunction(word);
-					if (declaration) {
-						let location = declaration.position;
-						resolve({
-							range: {
-								startLineNumber: location.lineNumber + 1,
-								endLineNumber: location.lineNumber + 1,
-								startColumn: location.column,
-								endColumn: location.column
-							},
-							uri: model.uri
-						});
-					}
-					else {
-						resolve([]);
-					}
-				});
+			async provideDefinition(model, pos, token): Promise<monaco.languages.Location | monaco.languages.Location[]> {
+				analyzer.parseEntire(); // TODO: Incremental parsing
+				let ast = analyzer.getAST();
+				let node = ast.nodeAt(pos.lineNumber);
+				let word = model.getWordAtPosition(pos).word;
+				let declaration = ast.findVariable(word) || ast.findFunction(word);
+				if (declaration) {
+					let location = declaration.position;
+					return {
+						range: {
+							startLineNumber: location.lineNumber + 1,
+							endLineNumber: location.lineNumber + 1,
+							startColumn: location.column,
+							endColumn: location.column
+						},
+						uri: model.uri
+					};
+				} else {
+					return [];
+				}
 			}
 		});
 	}
 
 	private setupCompletionProvider(analyzer: Analyzer): void {
 		monaco.languages.registerCompletionItemProvider('python', {
-			provideCompletionItems(model, pos, token): monaco.Promise<monaco.languages.CompletionList> {
-				return new monaco.Promise((resolve, reject) => {
-					analyzer.parseEntire(); // TODO: Incremental parsing
-					let ast = analyzer.getAST();
-					let node = ast.nodeAt(pos.lineNumber);
-					let list: monaco.languages.CompletionList = {
-						isIncomplete: false,
-						items: node.getFunctions().map(it => <monaco.languages.CompletionItem>{
-							label: it.name,
-							detail: it.name + "(" + it.parameterNames + ")",
-							kind: monaco.languages.CompletionItemKind.Function
-						}).concat(node.getVariables().getValues().map(it => <monaco.languages.CompletionItem>{
-							label: it.name,
-							detail: it.type,
-							kind: monaco.languages.CompletionItemKind.Variable
-						}))
-					};
-					resolve(list);
-				});
+			async provideCompletionItems(model, pos, token): Promise<monaco.languages.CompletionList> {
+				analyzer.parseEntire(); // TODO: Incremental parsing
+				let ast = analyzer.getAST();
+				let node = ast.nodeAt(pos.lineNumber);
+				let list: monaco.languages.CompletionList = {
+					incomplete: false,
+					suggestions: node.getFunctions().map(it => <monaco.languages.CompletionItem>{
+						label: it.name,
+						detail: it.name + "(" + it.parameterNames + ")",
+						kind: monaco.languages.CompletionItemKind.Function
+					}).concat(node.getVariables().getValues().map(it => <monaco.languages.CompletionItem>{
+						label: it.name,
+						detail: it.type,
+						kind: monaco.languages.CompletionItemKind.Variable
+					}))
+				};
+				return list;
 			}
 		});
 	}

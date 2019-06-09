@@ -6,7 +6,8 @@
 	"scripts": {
 		"watch": "tsc -w",
 		"build": "tsc",
-		"start": "electron ./src/js/main.js"
+		"launch": "electron ./src/js/main.js",
+		"start": "npm run build && npm run launch"
 	},
 	"keywords": [
 		"Electron"
@@ -15,14 +16,15 @@
 	"license": "MIT",
 	"devDependencies": {
 		"@types/jsonstream": "^0.8.30",
-		"electron": "^2.0.2"
+		"typescript": "^3.5.1",
+		"electron": "^5.0.3"
 	},
 	"dependencies": {
 		"JSONStream": "^1.3.3",
 		"chalk": "^2.4.1",
 		"command-exists": "^1.2.7",
 		"fix-path": "^2.1.0",
-		"monaco-editor": "^0.13.1",
+		"monaco-editor": "^0.17.0",
 		"xterm": "^3.5.1"
 	}
 }
