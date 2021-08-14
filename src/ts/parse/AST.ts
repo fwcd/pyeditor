@@ -1,4 +1,4 @@
-import { Set, ArraySet } from "../utils/set";
+import { Set, ArraySet } from "../utils/Set";
 
 export class AST {
 	readonly root: ASTNode;

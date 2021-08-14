@@ -1,4 +1,4 @@
-import { clearChilds } from "../utils/domUtils";
+import { clearChilds } from "../utils/DOMUtils";
 import { VersionChooserModel } from "../model/VersionChooserModel";
 
 let commandExists = require("command-exists");

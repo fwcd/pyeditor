@@ -1,7 +1,7 @@
 /// <reference path="../../../node_modules/monaco-editor/monaco.d.ts" />
 
 import { Analyzer } from "../parse/Analyzer";
-import { EditorLineHighlighter } from "./editorLineHighlighter";
+import { EditorLineHighlighter } from "./EditorLineHighlighter";
 import { FileLoaderView } from "./FileLoaderView";
 import { Language } from "../model/Language";
 import { FileLoaderModel } from "../model/FileLoaderModel";

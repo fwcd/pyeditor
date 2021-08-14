@@ -1,6 +1,6 @@
 import { remote } from "electron";
 import { FileLoaderModel } from "../model/FileLoaderModel";
-import { ListenerList } from "../utils/listenerList";
+import { ListenerList } from "../utils/ListenerList";
 import { Language } from "../model/Language";
 
 export class FileLoaderView {

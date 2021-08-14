@@ -1,6 +1,6 @@
-import { Observable } from "../utils/observable";
+import { Observable } from "../utils/Observable";
 import { TerminalProcess } from "./TerminalProcess";
-import { ListenerList } from "../utils/listenerList";
+import { ListenerList } from "../utils/ListenerList";
 
 export class TerminalModel {
 	readonly process = new Observable<TerminalProcess>();

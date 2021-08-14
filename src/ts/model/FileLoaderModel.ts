@@ -1,5 +1,5 @@
-import { Observable } from "../utils/observable";
-import { ListenerList } from "../utils/listenerList";
+import { Observable } from "../utils/Observable";
+import { ListenerList } from "../utils/ListenerList";
 
 export class FileLoaderModel {
 	readonly currentPath = new Observable<string>();

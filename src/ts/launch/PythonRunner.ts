@@ -5,8 +5,8 @@ import { TerminalModel } from "../model/TerminalModel";
 import { DataProcess, TerminalProcess } from "../model/TerminalProcess";
 import { VersionChooserModel } from "../model/VersionChooserModel";
 import { PythonDebugSession } from "./PythonDebugSession";
-import { ListenerList } from "../utils/listenerList";
-import { Observable } from "../utils/observable";
+import { ListenerList } from "../utils/ListenerList";
+import { Observable } from "../utils/Observable";
 import { FileLoaderModel } from "../model/FileLoaderModel";
 
 export class PythonRunner {

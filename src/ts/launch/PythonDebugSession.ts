@@ -1,6 +1,6 @@
 import { ChildProcess, spawn } from "child_process";
-import { Observable } from "../utils/observable";
-import { ListenerList } from "../utils/listenerList";
+import { Observable } from "../utils/Observable";
+import { ListenerList } from "../utils/ListenerList";
 import * as path from "path";
 import { Socket } from "net";
 import chalk from "chalk";

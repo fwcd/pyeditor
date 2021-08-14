@@ -1,4 +1,4 @@
-import { ListenerList } from "./listenerList";
+import { ListenerList } from "./ListenerList";
 
 export class Observable<T> {
 	private value?: T;

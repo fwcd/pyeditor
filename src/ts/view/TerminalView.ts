@@ -4,7 +4,7 @@ import { Terminal } from "xterm";
 import * as fit from 'xterm/lib/addons/fit/fit';
 import { TerminalModel } from "../model/TerminalModel";
 import { TerminalProcess } from "../model/TerminalProcess";
-import { ctrlOrCmdPressed } from "../utils/keyUtils";
+import { ctrlOrCmdPressed } from "../utils/KeyUtils";
 
 // Apply and declare prototype extension method "fit()"
 Terminal.applyAddon(fit);
