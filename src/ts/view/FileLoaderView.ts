@@ -27,6 +27,8 @@ export class FileLoaderView {
 				saveIcon.src = "img/saveIcon.png";
 			}
 		});
+
+		this.model.saveRequestListeners.add(() => this.save());
 	}
 	
 	public onLoad(filePath: string): void {
