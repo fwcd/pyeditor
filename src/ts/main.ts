@@ -16,7 +16,9 @@ function createWindow(): void {
 		width: 600,
 		height: 750,
 		webPreferences: {
-			nodeIntegration: true
+			nodeIntegration: true,
+			contextIsolation: false,
+			enableRemoteModule: true
 		}
 	});
 

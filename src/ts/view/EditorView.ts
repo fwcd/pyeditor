@@ -93,10 +93,12 @@ export class EditorView {
 					incomplete: false,
 					suggestions: node.getFunctions().map(it => <monaco.languages.CompletionItem>{
 						label: it.name,
+						insertText: it.name,
 						detail: it.name + "(" + it.parameterNames + ")",
 						kind: monaco.languages.CompletionItemKind.Function
 					}).concat(node.getVariables().getValues().map(it => <monaco.languages.CompletionItem>{
 						label: it.name,
+						insertText: it.name,
 						detail: it.type,
 						kind: monaco.languages.CompletionItemKind.Variable
 					}))
