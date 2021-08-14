@@ -1,9 +1,9 @@
+#!/usr/bin/env python3
 import json
 import sys
 import time
 from argparse import ArgumentParser
 from bdb import Bdb
-from socket import socket, AF_INET, SOCK_STREAM
 
 def expect(dict_obj, key, value):
     try:
@@ -21,7 +21,7 @@ class JsonDebugger(Bdb):
         self.run("exec(open(%r).read())" % self.mainfilepath)
 
     def writejson(self, obj):
-        self.jsonout.send((json.dumps(obj) + "\n").encode())
+        self.jsonout.write(json.dumps(obj) + "\n")
 
     def readjson(self):
         return json.loads(self.jsonin.readline())
@@ -61,30 +61,23 @@ class JsonDebugger(Bdb):
 
 def main():
     parser = ArgumentParser(description="JSON debugger")
-    parser.add_argument("--file", help="A path to the file to be debugged")
+    parser.add_argument("--file", required=True, help="A path to the file to be debugged")
     args = parser.parse_args()
+
+    jsonin = sys.stdin
+    jsonout = sys.stderr
     
-    serversocket = socket(AF_INET, SOCK_STREAM)
-    serversocket.bind(("", 0))
-    serversocket.listen(4)
-    
-    serveraddr = serversocket.getsockname()
-    
-    sys.stdout.write(json.dumps({
-        "type": "serverinit",
-        "host": serveraddr[0],
-        "port": serveraddr[1]
-    }) + "\n")
-    sys.stdout.flush()
+    jsonout.write(json.dumps({ "type": "serverinit" }) + "\n")
+    jsonout.flush()
+
     response = sys.stdin.readline()
     expect(json.loads(response), "type", "clientinit")
     
-    (clientsocket, address) = serversocket.accept()
-    jsonin = clientsocket.makefile()
-    jsonout = clientsocket
-    JsonDebugger().runfile(args.file, jsonin, jsonout, delay_between_lines=0.06) # seconds
-    jsonout.send((json.dumps({
+    debugger = JsonDebugger()
+
+    debugger.runfile(args.file, jsonin, jsonout, delay_between_lines=0.06) # seconds
+    jsonout.write(json.dumps({
         "type": "finish"
-    }) + "\n").encode())
+    }) + "\n")
 
 main()

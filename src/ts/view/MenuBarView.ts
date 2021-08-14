@@ -56,6 +56,7 @@ export class MenuBarView {
 			{
 				label: lang.get("about-menu"),
 				submenu: [
+					{role: 'toggleDevTools'},
 					{
 						label: lang.get("about-pyeditor"),
 						click(): void {
