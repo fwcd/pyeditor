@@ -1,5 +1,5 @@
-import chalk from "chalk";
-import { ChildProcess, spawn } from "child_process";
+import * as chalk from "chalk";
+import { spawn } from "child_process";
 import { Language } from "../model/Language";
 import { TerminalModel } from "../model/TerminalModel";
 import { DataProcess, TerminalProcess } from "../model/TerminalProcess";

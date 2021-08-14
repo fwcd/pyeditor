@@ -3,7 +3,7 @@ import { Observable } from "../utils/Observable";
 import { ListenerList } from "../utils/ListenerList";
 import * as path from "path";
 import { Socket } from "net";
-import chalk from "chalk";
+import * as chalk from "chalk";
 import { Language } from "../model/Language";
 import { TerminalProcess } from "../model/TerminalProcess";
 

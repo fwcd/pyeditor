@@ -61,19 +61,19 @@ export class FileLoaderView {
 	public showOpenDialog(): void {
 		remote.dialog.showOpenDialog(remote.getCurrentWindow(), {
 			properties: ["openFile"]
-		}, files => {
-			if (files && (files.length > 0)) {
+		}).then(files => {
+			if (!files.canceled && (files.filePaths.length > 0)) {
 				if (this.confirmIfUnsaved()) {
-					this.openFile(files[0]);
+					this.openFile(files.filePaths[0]);
 				}
 			}
 		});
 	}
 	
 	public showSaveAsDialog(): void {
-		remote.dialog.showSaveDialog(remote.getCurrentWindow(), {}, fileName => {
-			if (fileName) {
-				this.saveFile(fileName);
+		remote.dialog.showSaveDialog(remote.getCurrentWindow(), {}).then(file => {
+			if (!file.canceled && file.filePath) {
+				this.saveFile(file.filePath);
 			}
 		});
 	}

@@ -1,22 +1,13 @@
-import chalk from "chalk";
+import * as chalk from "chalk";
 import { clipboard } from "electron";
 import { Terminal } from "xterm";
-import * as fit from 'xterm/lib/addons/fit/fit';
+import { FitAddon } from "xterm-addon-fit";
 import { TerminalModel } from "../model/TerminalModel";
 import { TerminalProcess } from "../model/TerminalProcess";
 import { ctrlOrCmdPressed } from "../utils/KeyUtils";
 
-// Apply and declare prototype extension method "fit()"
-Terminal.applyAddon(fit);
-
 let inputChar = /^[a-zA-Zß°äöüÄÖÜ1234567890!'"\\§$%&\/\(\)\=\?\+\-#\.,;:{}\[\]\*<>\| ]$/;
 let newline = /[\r\n]+/;
-
-declare module "xterm" {
-	interface Terminal {
-		fit(): void;
-	}
-}
 
 export class TerminalView {
 	private xterm = new Terminal({
@@ -24,6 +15,7 @@ export class TerminalView {
 			background: "rgb(29, 29, 29)"
 		}
 	});
+	private fit = new FitAddon();
 	private history: string[] = [];
 	private historyOffset = 0;
 	private cachedCurrentInput = "";
@@ -37,11 +29,12 @@ export class TerminalView {
 		element: HTMLElement
 	) {
 		this.model = model;
+		this.xterm.loadAddon(this.fit);
 		this.xterm.open(element);
-		this.xterm.fit();
+		this.fit.fit();
 		this.xterm.attachCustomKeyEventHandler(event => this.firstKeyHandler(event));
-		this.xterm.on("key", (key, event) => this.onKeyInTerminal(key, event));
-		this.xterm.on("linefeed", () => this.onLineFeedInTerminal());
+		this.xterm.onKey(e => this.onKeyInTerminal(e.key, e.domEvent));
+		this.xterm.onLineFeed(() => this.onLineFeedInTerminal());
 		model.process.preSetHandlers.push(() => this.clear());
 		model.process.listen(process => {
 			if (process) {
@@ -116,7 +109,7 @@ export class TerminalView {
 	}
 	
 	public relayout(): void {
-		this.xterm.fit();
+		this.fit.fit();
 	}
 	
 	private insertAtCursor(delta: string): void {

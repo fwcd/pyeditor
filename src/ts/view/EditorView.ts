@@ -31,7 +31,7 @@ export class EditorView {
 				enabled: false
 			},
 			scrollBeyondLastLine: false,
-			autoIndent: true,
+			autoIndent: "full",
 			renderIndentGuides: false,
 			wordBasedSuggestions: false,
 			quickSuggestions: false

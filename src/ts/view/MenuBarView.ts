@@ -76,10 +76,10 @@ export class MenuBarView {
 					{role: 'services', submenu: []},
 					{type: 'separator'},
 					{role: 'hide'},
-					{role: 'hideothers'},
+					{role: 'hideOthers'},
 					{role: 'unhide'},
 					{type: 'separator'},
-					{role: 'toggledevtools'},
+					{role: 'toggleDevTools'},
 					{type: 'separator'},
 					{role: 'quit'}
 				]
